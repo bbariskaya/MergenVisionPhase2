@@ -1,0 +1,19 @@
+services:
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.test
+    image: mergenvision/test:milestone-a
+    volumes:
+      - ..:/app
+    working_dir: /app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    command: ["python3", "scripts/test_engines_and_annotate_phoebe.py"]
