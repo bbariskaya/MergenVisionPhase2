@@ -16,11 +16,19 @@ DOCKER_RUN := docker run --rm --gpus "device=$(GPU_DEVICE)" \
 	-v "$(REPO):/app" \
 	-w /app
 
-.PHONY: backend-unit backend-native-build backend-native-smoke frontend-test frontend-build sprint-02-acceptance
+.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance
+
+artifacts-check:
+	@echo "=== Artifact manifest check ==="
+	cd backend && python3 scripts/artifacts_check.py
 
 backend-unit:
 	@echo "=== Backend unit/integration tests ==="
 	cd backend && python3 -m pytest tests/unit tests/integration -q
+
+backend-unit-strict:
+	@echo "=== Backend unit/integration tests with -W error ==="
+	cd backend && python3 -m pytest tests/unit tests/integration -q -W error
 
 backend-native-build:
 	@echo "=== Backend native build ==="
@@ -28,20 +36,62 @@ backend-native-build:
 	$(DOCKER_RUN) -w $(NATIVE_BUILD) --entrypoint /usr/bin/cmake $(BUILD_CONTAINER) $(NATIVE_SRC) -B $(NATIVE_BUILD)
 	$(DOCKER_RUN) -w $(NATIVE_BUILD) --entrypoint /usr/bin/cmake $(BUILD_CONTAINER) --build $(NATIVE_BUILD)
 
+backend-native-linkcheck:
+	@echo "=== Backend native link check ==="
+	python3 backend/scripts/native_linkcheck.py
+
+backend-native-unit:
+	@echo "=== Backend native unit tests ==="
+	$(DOCKER_RUN) --entrypoint $(NATIVE_BUILD)/test_nms $(CONTAINER)
+
 backend-native-smoke:
 	@echo "=== Backend native detector smoke ==="
 	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/friendsshort_50f.mp4 $(OUT_DIR)/sprint-02-smoke 0
 	$(DOCKER_RUN) --entrypoint python3 $(CONTAINER) /app/backend/scripts/sanity_check_detections.py $(OUT_DIR)/sprint-02-smoke/detections.jsonl
+
+backend-detector-parity: backend-native-build
+	@echo "=== Detector parity vs CPU oracle ==="
+	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/friendsshort_50f.mp4 $(OUT_DIR)/sprint01_50f_acceptance 0
+	python3 backend/tests/native/test_detector_parity.py
+
+backend-detector-determinism: backend-native-build
+	@echo "=== Detector determinism repeated run check ==="
+	python3 backend/tests/native/test_detector_determinism.py
+
+backend-hotpath:
+	@echo "=== GPU hot-path contract (Nsight Systems) ==="
+	python3 -m pytest backend/tests/native/test_gpu_hot_path_contract.py -v
+
+backend-video-smoke: backend-native-build
+	@echo "=== Backend video smoke (longer clip) ==="
+	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/Friends.mp4 $(OUT_DIR)/video_smoke 0
+	$(DOCKER_RUN) --entrypoint python3 $(CONTAINER) /app/backend/scripts/sanity_check_detections.py $(OUT_DIR)/video_smoke/detections.jsonl
+
+backend-cli-smoke:
+	@echo "=== Backend CLI smoke ==="
+	cd backend && python3 -m app.cli detect \
+		--video ../backend/artifacts/videos/friendsshort_50f.mp4 \
+		--output ../backend/out/cli-smoke \
+		--host-gpu $(GPU_DEVICE)
 
 frontend-test:
 	@echo "=== Frontend tests ==="
 	cd frontend && npm run test
 
 frontend-build:
-	@echo "=== Frontend typecheck/build ==="
-	cd frontend && npm run typecheck
+	@echo "=== Frontend build ==="
+	cd frontend && npm run build
 
-sprint-02-acceptance: backend-unit backend-native-build backend-native-smoke frontend-test frontend-build
+sprint-02-acceptance: backend-unit backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke frontend-test frontend-build
 	@echo "=== git diff --check ==="
 	git diff --check
 	@echo "Sprint 02 acceptance PASSED"
+
+phase2-sprint-01-acceptance: artifacts-check backend-unit-strict frontend-test frontend-build
+	@echo "Phase2 Sprint 01 acceptance PASSED (native parity/hot-path targets maintained separately)"
+
+phase2-foundation-acceptance: artifacts-check backend-unit-strict backend-cli-smoke sprint-02-acceptance \
+    backend-detector-parity backend-detector-determinism backend-hotpath backend-video-smoke
+	@echo "=== git diff --check ==="
+	git diff --check
+	@echo "Phase2 foundation acceptance PASSED"

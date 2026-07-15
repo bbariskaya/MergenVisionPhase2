@@ -205,10 +205,10 @@ static gboolean bus_call(GstBus* bus, GstMessage* msg, gpointer data) {
 static gboolean ensure_nvdsretinaface_plugin() {
     if (gst_element_factory_find("nvdsretinaface")) return TRUE;
 
-    const char* build_dir = "/app/native/build";
+    const char* build_dir = "/app/backend/native/build";
     std::string plugin_path = std::string(build_dir) + "/libgstnvdsretinaface.so";
     if (g_access(plugin_path.c_str(), F_OK) != 0) {
-        plugin_path = "native/build/libgstnvdsretinaface.so";
+        plugin_path = "backend/native/build/libgstnvdsretinaface.so";
     }
     GstPlugin* plugin = gst_plugin_load_file(plugin_path.c_str(), nullptr);
     if (!plugin) {

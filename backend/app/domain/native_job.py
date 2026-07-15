@@ -40,9 +40,9 @@ class NativeJobRequest:
     tracker_config: Path | None = None
 
     def __post_init__(self) -> None:
-        if not self.video_path.exists():
-            raise ValueError(f"video not found: {self.video_path}")
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Intentionally no filesystem side effects here. Input existence and
+        # output directory creation belong to the infrastructure preflight.
+        pass
 
 
 @dataclass(frozen=True, kw_only=True)

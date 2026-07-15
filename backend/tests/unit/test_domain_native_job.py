@@ -16,22 +16,23 @@ def test_job_status_values() -> None:
     assert JobStatus.FAILED.value == "failed"
 
 
-def test_native_job_request_creates_output_dir(tmp_path) -> None:
+def test_native_job_request_has_no_filesystem_side_effects(tmp_path) -> None:
     video = tmp_path / "clip.mp4"
-    video.write_bytes(b"fake")
     out = tmp_path / "out" / "nested"
     req = NativeJobRequest(job_id="j1", video_path=video, output_dir=out)
     assert req.job_id == "j1"
-    assert out.exists()
+    assert not video.exists()
+    assert not out.exists()
 
 
-def test_native_job_request_rejects_missing_video(tmp_path) -> None:
-    with pytest.raises(ValueError, match="video not found"):
-        NativeJobRequest(
-            job_id="j1",
-            video_path=tmp_path / "missing.mp4",
-            output_dir=tmp_path / "out",
-        )
+def test_native_job_request_accepts_missing_video(tmp_path) -> None:
+    """Constructor validation is deferred to the infrastructure preflight."""
+    req = NativeJobRequest(
+        job_id="j1",
+        video_path=tmp_path / "missing.mp4",
+        output_dir=tmp_path / "out",
+    )
+    assert req.video_path == tmp_path / "missing.mp4"
 
 
 def test_native_job_result_defaults() -> None:

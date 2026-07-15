@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 RETINA_ONNX = REPO_ROOT / "backend" / "artifacts" / "models" / "retinaface_r50_dynamic.onnx"
 
 CONF_THRESHOLD = 0.5

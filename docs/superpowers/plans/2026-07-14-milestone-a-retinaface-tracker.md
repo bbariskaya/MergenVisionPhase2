@@ -23,7 +23,7 @@
 ## File Structure
 
 - `docker/Dockerfile.worker` — GPU worker image with GStreamer, DeepStream, TensorRT, no OpenCV/ONNXRuntime.
-- `docker/docker-compose.worker.yml` — compose file mounting `models/`, `engines/`, `test_videos/` read-only.
+- `docker/docker-compose.worker.yml` — compose file mounting `models/`, `engines/`, `backend/artifacts/videos/` read-only.
 - `native/retinaface_parser/` — C++ custom parser for `nvinfer`:
   - `retinaface_parser.h`
   - `retinaface_parser.cpp` — prior generation, variance decode, conf filter, NMS, landmark decode, reverse mapping.
@@ -54,7 +54,7 @@
 
 - [ ] **Step 1: Write Dockerfile.worker**
 
-Base from NVIDIA DeepStream 7.1 devel image, install `sha256sum`, `cmake`, `g++`. Do **not** install OpenCV or ONNX Runtime. Mount read-only host directories for `models/`, `engines/`, `test_videos/`.
+Base from NVIDIA DeepStream 7.1 devel image, install `sha256sum`, `cmake`, `g++`. Do **not** install OpenCV or ONNX Runtime. Mount read-only host directories for `models/`, `engines/`, `backend/artifacts/videos/`.
 
 ```dockerfile
 FROM nvcr.io/nvidia/deepstream:7.1-devel
@@ -76,10 +76,10 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=0
     volumes:
-      - ../models:/opt/mergenvision/models:ro
-      - ../engines:/opt/mergenvision/engines:ro
-      - ../test_videos:/opt/mergenvision/test_videos:ro
-      - ../out:/opt/mergenvision/out
+      - ../backend/artifacts/models:/app/backend/artifacts/models:ro
+      - ../backend/artifacts/engines:/app/backend/artifacts/engines:ro
+      - ../backend/artifacts/videos:/app/backend/artifacts/videos:ro
+      - ../backend/out:/app/backend/out
 ```
 
 - [ ] **Step 3: Add runtime inventory helper**
@@ -326,7 +326,7 @@ def test_nvinfer_integration_gate():
         "docker","compose","-f","docker/docker-compose.worker.yml",
         "run","--rm","worker",
         "/opt/mergenvision/native/worker/nvinfer_integration_probe",
-        "/opt/mergenvision/test_videos/friendsshort.mp4",
+        "/opt/mergenvision/backend/artifacts/videos/friendsshort.mp4",
         "/opt/mergenvision/configs/config_retinaface.txt"
     ], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
@@ -377,7 +377,7 @@ In the `nvinfer` source pad probe, for each frame:
   - Reverse map bbox and landmarks.
   - Append to JSON structure for that frame.
 
-Write output to `/opt/mergenvision/out/retinaface_parity.json`.
+Write output to `/app/backend/out/retinaface_parity.json`.
 
 - [ ] **Step 2: Write CPU oracle fixture**
 
@@ -395,8 +395,8 @@ Run worker on `friendsshort.mp4`, read output JSON, and compare first-N frames w
 ```python
 def test_retinaface_output_parity_gate():
     run_worker("friendsshort.mp4")
-    native = json.load(open("out/retinaface_parity.json"))
-    oracle = cpu_oracle_retinaface.run("test_videos/friendsshort.mp4", max_frames=10)
+    native = json.load(open("backend/out/retinaface_parity.json"))
+    oracle = cpu_oracle_retinaface.run("backend/artifacts/videos/friendsshort.mp4", max_frames=10)
     assert native[0]["objects"][0]["bbox_xyxy"] == pytest.approx(oracle[0]["bbox_xyxy"], abs=1.5)
 ```
 
@@ -503,13 +503,13 @@ Verify that for batch-size=1 the JSON `frame_index` and `pts_ms` are monotonical
 ```bash
 docker compose -f docker/docker-compose.worker.yml run --rm worker \
   /opt/mergenvision/native/worker/mergenvision_worker \
-  -i /opt/mergenvision/test_videos/friendsshort.mp4 \
+  -i /opt/mergenvision/backend/artifacts/videos/friendsshort.mp4 \
   -c /opt/mergenvision/configs/config_retinaface.txt \
   -t /opt/mergenvision/configs/config_tracker.txt \
-  -o /opt/mergenvision/out/milestone_a.json
+  -o /app/backend/out/milestone_a.json
 ```
 
-Expected: exit 0, `out/milestone_a.json` produced.
+Expected: exit 0, `backend/out/milestone_a.json` produced.
 
 - [ ] **Step 5: Commit**
 
@@ -526,13 +526,13 @@ git commit -m "feat(worker): add nvtracker to pipeline with batch=1 and PTS orde
 - Create: `tests/integration/test_milestone_a_acceptance.py`
 
 **Interfaces:**
-- Verifies the single `out/milestone_a.json` meets acceptance contract.
+- Verifies the single `backend/out/milestone_a.json` meets acceptance contract.
 
 - [ ] **Step 1: Define acceptance test**
 
 ```python
 def test_milestone_a_acceptance():
-    data = json.load(open("out/milestone_a.json"))
+    data = json.load(open("backend/out/milestone_a.json"))
     assert data["video"] == "friendsshort.mp4"
     assert data["completed"] is True
     assert data["gpu_scale_x"] == pytest.approx(1280/640, rel=1e-6)
@@ -630,14 +630,14 @@ identity:
   source: Friends
   canonical_face_id: phoebe_001
 annotations:
-  - media_path: test_videos/friendsshort.mp4
+  - media_path: backend/artifacts/videos/friendsshort.mp4
     type: video
     frame_index: int
     pts_ms: float
     bbox_xyxy: [float, float, float, float]   # original resolution
     landmarks_5x2: [[x0,y0], [x1,y1], [x2,y2], [x3,y3], [x4,y4]]
     visibility: visible|occluded|ignore
-  - media_path: DATASET/Phoebe/some_photo.jpg
+  - media_path: backend/artifacts/gallery/Phoebe/some_photo.jpg
     type: gallery
     bbox_xyxy: [...]
     landmarks_5x2: [...]

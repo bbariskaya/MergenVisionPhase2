@@ -19,13 +19,13 @@ Hybrid Python/C++ boundary is preserved and made explicit in the file tree:
    - Moved production native source from root `native/` to `backend/native/`.
    - Moved production/test/tool Python from root `tests/`, `scripts/`, `tools/` to `backend/tests/`, `backend/scripts/`, `backend/tools/`.
    - Kept `frontend/` untouched.
-   - Consolidated all runtime artifacts under `backend/artifacts/`:
-     - `backend/artifacts/engines/` — TensorRT engines (kept the built `bs1.opt*.engine` variants).
-     - `backend/artifacts/models/` — ONNX and `.pt` weights.
-     - `backend/artifacts/gallery/` — merged `DATASET/` and `data/gallery/`.
-     - `backend/artifacts/videos/` — moved from root `test_videos/`.
-     - `backend/artifacts/annotations/` — moved from root `data/annotations/`.
-   - Moved generated outputs from root `out/` to `backend/out/`.
+    - Consolidated all runtime artifacts under `backend/artifacts/`:
+      - `backend/artifacts/engines/` — TensorRT engines (kept the built `bs1.opt*.engine` variants).
+      - `backend/artifacts/models/` — ONNX and `.pt` weights.
+      - `backend/artifacts/gallery/` — merged the previous root gallery directory and `data/gallery/`.
+      - `backend/artifacts/videos/` — moved from the previous root video directory.
+      - `backend/artifacts/annotations/` — moved from `data/annotations/`.
+    - Moved generated outputs to the canonical `backend/out/` directory.
    - Removed the leftover root `native/build/` directory.
 
 2. **Updated native build paths**

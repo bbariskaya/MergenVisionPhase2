@@ -36,7 +36,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 MODELS_DIR = ARTIFACTS_DIR / "models"
 ENGINES_DIR = ARTIFACTS_DIR / "engines"
-DATASET_DIR = ARTIFACTS_DIR / "gallery" / "Phoebe"
+GALLERY_DIR = ARTIFACTS_DIR / "gallery" / "Phoebe"
 ANNOTATIONS_DIR = ARTIFACTS_DIR / "annotations" / "Phoebe"
 OUT_DIR = REPO_ROOT / "out"
 
@@ -277,7 +277,7 @@ def find_phoebe_images() -> list[Path]:
     exts = {"*.jpg", "*.jpeg", "*.png"}
     paths = []
     for ext in exts:
-        paths.extend(DATASET_DIR.glob(ext))
+        paths.extend(GALLERY_DIR.glob(ext))
     return sorted(paths)
 
 
@@ -287,7 +287,7 @@ def annotate_phoebe(
 ) -> dict[Path, dict]:
     """Return selected face annotation per image, keyed by path."""
     paths = find_phoebe_images()
-    print(f"Found {len(paths)} Phoebe images in {DATASET_DIR}")
+    print(f"Found {len(paths)} Phoebe images in {GALLERY_DIR}")
 
     per_image: list[dict] = []
     for p in paths:

@@ -2,7 +2,7 @@
 
 Reads artifacts/annotations/Phoebe/annotations.yaml and writes one image per entry
 with the bounding box and five landmarks drawn. Output goes to
-out/phoebe_annotated/ by default.
+backend/out/phoebe_annotated/ by default.
 """
 from __future__ import annotations
 

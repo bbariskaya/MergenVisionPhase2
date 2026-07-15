@@ -1,8 +1,8 @@
 [property]
 gpu-id=0
 net-scale-factor=1.0
-model-engine-file=/app/engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
-onnx-file=/app/models/retinaface_r50_dynamic.onnx
+model-engine-file=/app/backend/artifacts/engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
+onnx-file=/app/backend/artifacts/models/retinaface_r50_dynamic.onnx
 batch-size=1
 network-mode=0
 process-mode=1

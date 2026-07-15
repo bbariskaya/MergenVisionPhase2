@@ -81,11 +81,15 @@ def test_root_has_no_stray_production_source():
 
 
 def test_backend_does_not_import_frontend_typescript():
-    for path in _walk_skipping_generated(BACKEND_ROOT):
-        if path.suffix != ".py" or path.name == "test_layout.py":
-            continue
-        text = path.read_text(errors="ignore")
-        assert "frontend/src" not in text, f"{path} references frontend/src"
+    # Only production source is forbidden from referencing frontend paths;
+    # tests legitimately enumerate frontend files for layout/contract checks.
+    production_roots = [BACKEND_ROOT / "app", BACKEND_ROOT / "native"]
+    for root in production_roots:
+        for path in _walk_skipping_generated(root):
+            if path.suffix != ".py":
+                continue
+            text = path.read_text(errors="ignore")
+            assert "frontend/src" not in text, f"{path} references frontend/src"
 
 
 def test_frontend_does_not_import_backend_python():

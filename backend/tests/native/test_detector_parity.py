@@ -86,14 +86,14 @@ def test_frame_parity(video_path: Path, jsonl_path: Path, frame_idx: int = 0) ->
 
 
 def main() -> int:
-    video = REPO / "test_videos" / "friendsshort_50f.mp4"
-    jsonl = REPO / "out" / "sprint01_50f_acceptance" / "detections.jsonl"
+    video = REPO / "backend" / "artifacts" / "videos" / "friendsshort_50f.mp4"
+    jsonl = REPO / "backend" / "out" / "sprint01_50f_acceptance" / "detections.jsonl"
     if not video.exists():
         print(f"SKIP: video not found: {video}", file=sys.stderr)
         return 0
     if not jsonl.exists():
         # Fall back to last smoke output if acceptance run has not populated it.
-        jsonl = REPO / "out" / "sprint01_50f_v3" / "detections.jsonl"
+        jsonl = REPO / "backend" / "out" / "sprint01_50f_v3" / "detections.jsonl"
     if not jsonl.exists():
         print(f"SKIP: native detections not found: {jsonl}", file=sys.stderr)
         return 0

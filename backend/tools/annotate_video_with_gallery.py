@@ -1,4 +1,4 @@
-"""Assign DATASET identity labels to video detections using TensorRT recognition and track by spatial continuity."""
+"""Assign gallery identity labels to video detections using TensorRT recognition and track by spatial continuity."""
 from __future__ import annotations
 
 import argparse
@@ -28,6 +28,9 @@ ARC_FACE_SRC = np.array(
     ],
     dtype=np.float32,
 )
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 
 COLOR_MAP = {
     "Chandler": (255, 0, 0),
@@ -183,9 +186,21 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("video", type=Path)
     parser.add_argument("detections", type=Path)
-    parser.add_argument("--gallery", type=Path, default=Path("artifacts/gallery/gallery_centroids.json"))
-    parser.add_argument("--output-dir", type=Path, default=Path("out/recognition_annotations"))
-    parser.add_argument("--engine", type=Path, default=Path("artifacts/engines/glintr100.bs1.opt128.max256.fp16.trt1014.engine"))
+    parser.add_argument(
+        "--gallery",
+        type=Path,
+        default=ARTIFACTS_DIR / "gallery" / "gallery_centroids.json",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=REPO_ROOT / "out" / "recognition_annotations",
+    )
+    parser.add_argument(
+        "--engine",
+        type=Path,
+        default=ARTIFACTS_DIR / "engines" / "glintr100.bs1.opt128.max256.fp16.trt1014.engine",
+    )
 
     parser.add_argument("--track-dist", type=float, default=120.0)
     parser.add_argument("--track-max-age", type=int, default=5)

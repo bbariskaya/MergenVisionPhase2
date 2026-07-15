@@ -10,7 +10,7 @@ MergenVisionPhase2/
 │   ├── app/          # FastAPI (future), domain, application services, ports, infra
 │   ├── artifacts/    # Runtime models, engines, gallery, videos (not tracked)
 │   ├── native/       # C++/CUDA GStreamer/DeepStream/TensoRT worker
-│   ├── out/          # Generated worker outputs (not tracked)
+│   ├── out          # Generated worker outputs under backend/out/ (not tracked)
 │   ├── scripts/      # Production/job helper scripts
 │   ├── tools/        # Developer/benchmark/visualisation tools
 │   └── tests/        # Unit, integration and native parity tests
@@ -54,8 +54,8 @@ Run the backend CLI (from `backend/`):
 ```bash
 cd backend
 python -m app.cli detect \
-  --video ../artifacts/videos/friendsshort_50f.mp4 \
-  --output ../out/sprint-02-cli \
+  --video ../backend/artifacts/videos/friendsshort_50f.mp4 \
+  --output ../backend/out/sprint-02-cli \
   --host-gpu 0
 ```
 

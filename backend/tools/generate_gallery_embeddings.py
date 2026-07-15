@@ -1,4 +1,4 @@
-"""Generate one representative embedding per gallery image for every DATASET identity."""
+"""Generate one representative embedding per gallery image for every gallery identity."""
 from __future__ import annotations
 
 import json
@@ -20,6 +20,9 @@ from test_engines_and_annotate_phoebe import (
     decode_retinaface,
     preprocess_detector,
 )
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ARTIFACTS_DIR = REPO_ROOT / "artifacts"
 
 ARC_FACE_SRC = np.array(
     [
@@ -78,7 +81,7 @@ def _select_faces_for_identity(
     recognizer_onnx: OrtSession,
     identity: str,
 ) -> dict[Path, dict]:
-    folder = Path("DATASET") / identity
+    folder = ARTIFACTS_DIR / "gallery" / identity
     paths = sorted(p for ext in ["*.jpg", "*.jpeg", "*.png"] for p in folder.glob(ext))
     print(f"{identity}: found {len(paths)} images")
 

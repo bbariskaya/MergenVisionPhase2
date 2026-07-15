@@ -1,6 +1,6 @@
 """Side-by-side YOLO11 COCO detection vs RetinaFace face detection on Phoebe images.
 
-Output: out/phoebe_yolo11_vs_retinaface/<stem>_compare.jpg
+Output: backend/out/phoebe_yolo11_vs_retinaface/<stem>_compare.jpg
 
 YOLO11 is a general 80-class COCO detector; guitar is *not* one of those classes,
 but the script will draw every COCO class it actually detects (person, cup, chair,

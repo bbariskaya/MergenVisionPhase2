@@ -4,7 +4,7 @@ Run from the ``backend/`` directory:
 
     python -m app.cli detect \
         --video ../artifacts/videos/friendsshort_50f.mp4 \
-        --output ../out/sprint-02-cli \
+        --output ../backend/out/sprint-02-cli \
         --host-gpu 0
 
 The CLI performs no GPU compute; it delegates the entire job to the native

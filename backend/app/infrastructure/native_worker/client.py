@@ -31,13 +31,15 @@ class NativeDetectorClient:
         self.gst_plugin_path = gst_plugin_path
         self.gpu_device = gpu_device
 
-    def _docker_args(self, working_dir: str = "/app") -> list[str]:
+    def _docker_args(
+        self, *, host_gpu: int, working_dir: str = "/app"
+    ) -> list[str]:
         return [
             "docker",
             "run",
             "--rm",
             "--gpus",
-            f"device={self.gpu_device}",
+            f"device={host_gpu}",
             "-e",
             "CUDA_VISIBLE_DEVICES=0",
             "-e",
@@ -48,24 +50,47 @@ class NativeDetectorClient:
             working_dir,
         ]
 
+    def _resolve_host_path(self, path: Path | str, *, must_exist: bool = True) -> Path:
+        """Resolve a path against the repo root and current working directory.
+
+        Absolute paths are used as-is. Relative paths are first resolved against
+        ``Path.cwd()`` and then ``self.repo_root``; the first candidate that is
+        inside the repo and, when ``must_exist`` is true, exists is returned.
+        """
+        p = Path(path)
+        if p.is_absolute():
+            resolved = p.resolve()
+            if must_exist and not resolved.exists():
+                raise FileNotFoundError(f"input video not found: {resolved}")
+            return resolved
+
+        candidates = [(Path.cwd() / p).resolve(), (self.repo_root / p).resolve()]
+        for candidate in candidates:
+            try:
+                candidate.relative_to(self.repo_root)
+            except ValueError:
+                continue
+            if not must_exist or candidate.exists():
+                return candidate
+
+        raise FileNotFoundError(f"input video not found: {candidates[0]}")
+
     def run_command(
         self,
         input_video_path: Path | str,
         output_dir: Path | str,
         *,
         tracker_config: Path | str | None = None,
+        gpu_device: int | None = None,
     ) -> list[str]:
-        """Return the docker command to run the worker on one video."""
-        host_input = Path(input_video_path)
-        host_output = Path(output_dir)
+        """Return the docker command to run the worker on one video.
 
-        if not host_input.is_absolute():
-            host_input = self.repo_root / host_input
-        if not host_output.is_absolute():
-            host_output = self.repo_root / host_output
+        ``gpu_device`` is the host GPU index passed to ``--gpus device=...``.
+        Inside the container logical CUDA device stays 0 (CUDA_VISIBLE_DEVICES).
+        """
+        host_input = self._resolve_host_path(input_video_path)
+        host_output = self._resolve_host_path(output_dir, must_exist=False)
 
-        if not host_input.exists():
-            raise FileNotFoundError(f"input video not found: {host_input}")
         host_output.mkdir(parents=True, exist_ok=True)
 
         # Inside the container the repository is mounted at /app, so use
@@ -84,8 +109,9 @@ class NativeDetectorClient:
                 host_cfg = self.repo_root / host_cfg
             args.append(str(Path("/app") / host_cfg.relative_to(self.repo_root)))
 
+        host_gpu = gpu_device if gpu_device is not None else self.gpu_device
         return [
-            *self._docker_args(),
+            *self._docker_args(host_gpu=host_gpu),
             "--entrypoint",
             self.worker_path,
             self.container,

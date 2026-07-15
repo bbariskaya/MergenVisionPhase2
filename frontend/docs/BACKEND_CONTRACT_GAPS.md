@@ -11,7 +11,7 @@ this repository.
 - `native/worker/main.cpp` and supporting CUDA kernels run an offline
   DeepStream pipeline: NVDEC → RetinaFace R50 → NvDCF → alignment →
   GlintR100.
-- Current worker output is local files in `out/<video>/`:
+- Current worker output is local files in `backend/out/<video>/`:
   - `detections.jsonl`
   - `tracks.json`
   - `run_manifest.json`
