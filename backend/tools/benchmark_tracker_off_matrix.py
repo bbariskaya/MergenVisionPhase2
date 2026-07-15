@@ -18,7 +18,7 @@ CONTAINER = "nvcr.io/nvidia/deepstream:9.0-triton-multiarch"
 GST_PLUGIN_PATH = "/app/backend/native/build/gst-plugins"
 GPU_ID = 0
 DEFAULT_VIDEO = REPO / "backend" / "artifacts" / "videos" / "Friends.mp4"
-OUT_ROOT = REPO / "backend" / "out" / "correctness_matrix"
+OUT_ROOT = REPO / "backend" / "out" / "correctness_matrix_tracker_off"
 
 
 def host_to_container(path: Path) -> str:
@@ -144,8 +144,8 @@ def parse_worker_stdout(out: str) -> dict[str, Any]:
     return data
 
 
-def run_experiment(video: Path, batch_size: int, tracker: bool, render: bool, run_idx: int, max_run_sec: int) -> dict[str, Any]:
-    tag = f"b{batch_size}_t{'on' if tracker else 'off'}_r{'on' if render else 'off'}_run{run_idx}"
+def run_experiment(video: Path, batch_size: int, render: bool, run_idx: int, max_run_sec: int) -> dict[str, Any]:
+    tag = f"b{batch_size}_r{'on' if render else 'off'}_run{run_idx}"
     out_dir = OUT_ROOT / tag
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -157,11 +157,8 @@ def run_experiment(video: Path, batch_size: int, tracker: bool, render: bool, ru
         host_to_container(out_dir),
         str(GPU_ID),
         "--batch-size", str(batch_size),
+        "--tracker", "off",
     ]
-    if tracker:
-        args += ["--tracker", "/app/backend/native/configs/tracker_NvDCF_mergen.yml"]
-    else:
-        args += ["--tracker", "off"]
     if render:
         args += ["--annotated-output", host_to_container(out_dir / "annotated.mp4")]
 
@@ -170,7 +167,6 @@ def run_experiment(video: Path, batch_size: int, tracker: bool, render: bool, ru
         "-e", f"CUDA_VISIBLE_DEVICES={GPU_ID}",
         "-e", f"GST_PLUGIN_PATH={GST_PLUGIN_PATH}",
         "-e", "USE_NEW_NVSTREAMMUX=0",
-        "-e", "MV_ALLOW_TRACKER_BATCH=1",
         "-v", f"{REPO}:/app",
         "-w", "/app",
         "--entrypoint", "timeout",
@@ -196,17 +192,16 @@ def run_experiment(video: Path, batch_size: int, tracker: bool, render: bool, ru
 
     result: dict[str, Any] = {
         "tag": tag,
-        "requested_batch_size": batch_size,
-        "requested_tracker": tracker,
-        "requested_render": render,
+        "batch_size": batch_size,
+        "tracker": tracker,
+        "render": render,
         "run_idx": run_idx,
         "container_wall_sec": round(wall, 3),
         "exit_code": proc.returncode,
         "stdout_tail": "\n".join(out.strip().splitlines()[-10:]),
     }
     result.update(stdout_data)
-    # Nest manifest so its tracker/config string keys do not overwrite our booleans.
-    result["manifest"] = manifest
+    result.update(manifest)
     result["gpu_telemetry"] = summarize_samples(samples)
 
     # Render file check.
@@ -241,36 +236,7 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--max-run-sec", type=int, default=300)
     parser.add_argument("--skip-warmup", action="store_true")
-    parser.add_argument("--from-report", type=Path, default=None,
-                        help="Re-print summary from an existing JSON report without rerunning GPU jobs")
     args = parser.parse_args()
-
-    if args.from_report:
-        with open(args.from_report) as f:
-            summary = json.load(f)
-        results = summary.get("results", [])
-        normalized: list[dict[str, Any]] = []
-        for r in results:
-            rn = dict(r)
-            # New reports store requested_* and nest manifest; old reports have flat keys.
-            if rn.get("requested_batch_size") is None:
-                rn["requested_batch_size"] = rn.get("batch_size")
-            if rn.get("requested_tracker") is None:
-                t = rn.get("tracker")
-                if isinstance(t, bool):
-                    rn["requested_tracker"] = t
-                elif isinstance(t, str):
-                    rn["requested_tracker"] = (t != "none")
-            if rn.get("requested_render") is None:
-                rn["requested_render"] = rn.get("render")
-            normalized.append(rn)
-        results = normalized
-        batch_sizes = sorted({r["requested_batch_size"] for r in results if r.get("requested_batch_size")})
-        trackers = sorted({r["requested_tracker"] for r in results if r.get("requested_tracker") is not None})
-        renders = sorted({r["requested_render"] for r in results if r.get("requested_render") is not None})
-        print(f"Loaded {len(results)} runs from {args.from_report}")
-        print_summary_table(results, batch_sizes, trackers, renders)
-        return
 
     video = args.video.resolve()
     if OUT_ROOT.exists():
@@ -341,22 +307,14 @@ def main() -> None:
         json.dump(summary, f, indent=2)
     print(f"\nRaw report written to: {report_path}", flush=True)
 
-    print_summary_table(results, batch_sizes, trackers, renders)
-
-
-def print_summary_table(results: list[dict[str, Any]], batch_sizes: list[int],
-                        trackers: list[bool], renders: list[bool]) -> None:
+    # Print aggregated median table.
     print("\n=== Median wall time per combination ===")
     print(f"{'batch':>5} {'tracker':>7} {'render':>6} {'median_wall':>11} {'median_fps':>10} {'avg_batch':>9} {'ok_runs':>7}")
     for batch_size in batch_sizes:
         for tracker in trackers:
             for render in renders:
-                subset = [r for r in results
-                          if r.get("requested_batch_size") == batch_size
-                          and r.get("requested_tracker") == tracker
-                          and r.get("requested_render") == render]
-                walls = [r["worker_wall_sec"] for r in subset
-                         if r.get("worker_wall_sec") and r.get("completed")]
+                subset = [r for r in results if r["batch_size"] == batch_size and r["tracker"] == tracker and r["render"] == render]
+                walls = [r["worker_wall_sec"] for r in subset if r.get("worker_wall_sec") and r.get("completed")]
                 frames = [r.get("frames", 0) for r in subset if r.get("frames")]
                 avg_batches = [r.get("avg_batch", 0) for r in subset if r.get("avg_batch")]
                 ok = sum(1 for r in subset if r.get("completed") and r.get("worker_error") == 0)

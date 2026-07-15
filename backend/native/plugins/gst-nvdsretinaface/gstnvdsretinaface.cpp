@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <fstream>
 
@@ -47,6 +48,18 @@ namespace mv = mergenvision;
 #define GST_NVDS_RETINAFACE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFace))
 #define GST_NVDS_RETINAFACE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFaceClass))
 
+struct GstNvDsRetinaFaceImpl {
+    std::unique_ptr<mv::RetinaFaceEngine> engine;
+    std::unique_ptr<mv::RetinaFacePostproc> postproc;
+    cudaStream_t cuda_stream = nullptr;
+    gboolean started = FALSE;
+
+    static constexpr size_t PREPROC_ELM = 1 * 3 * 640 * 640;
+    float* h_preproc_dump = nullptr;
+    bool dump_preproc = false;
+    std::string preproc_dump_dir;
+};
+
 struct GstNvDsRetinaFace {
     GstBaseTransform base_transform;
 
@@ -56,17 +69,8 @@ struct GstNvDsRetinaFace {
     gfloat nms_threshold = 0.4f;
     gint gpu_id = 0;
 
-    // State
-    std::unique_ptr<mv::RetinaFaceEngine> engine;
-    std::unique_ptr<mv::RetinaFacePostproc> postproc;
-    cudaStream_t cuda_stream = nullptr;
-    gboolean started = FALSE;
-
-    // Diagnostic (off by default): dump preprocessed input tensor per frame.
-    static constexpr size_t PREPROC_ELM = 1 * 3 * 640 * 640;
-    float* h_preproc_dump = nullptr;
-    bool dump_preproc = false;
-    std::string preproc_dump_dir;
+    //_heap-allocated C++ state, managed explicitly in init/finalize.
+    GstNvDsRetinaFaceImpl* impl = nullptr;
 };
 
 struct GstNvDsRetinaFaceClass {
@@ -162,13 +166,17 @@ static void gst_nvdsretinaface_get_property(GObject* object, guint prop_id,
 static void gst_nvdsretinaface_finalize(GObject* object) {
     GstNvDsRetinaFace* self = GST_NVDS_RETINAFACE(object);
     g_free(self->engine_file);
-    if (self->cuda_stream) {
-        cudaStreamDestroy(self->cuda_stream);
-        self->cuda_stream = nullptr;
-    }
-    if (self->h_preproc_dump) {
-        cudaFreeHost(self->h_preproc_dump);
-        self->h_preproc_dump = nullptr;
+    if (self->impl) {
+        if (self->impl->cuda_stream) {
+            cudaStreamDestroy(self->impl->cuda_stream);
+            self->impl->cuda_stream = nullptr;
+        }
+        if (self->impl->h_preproc_dump) {
+            cudaFreeHost(self->impl->h_preproc_dump);
+            self->impl->h_preproc_dump = nullptr;
+        }
+        delete self->impl;
+        self->impl = nullptr;
     }
     G_OBJECT_CLASS(gst_nvdsretinaface_parent_class)->finalize(object);
 }
@@ -176,6 +184,10 @@ static void gst_nvdsretinaface_finalize(GObject* object) {
 static gboolean gst_nvdsretinaface_start(GstBaseTransform* btrans) {
     GstNvDsRetinaFace* self = GST_NVDS_RETINAFACE(btrans);
     ensure_face_landmark_meta_type();
+
+    if (!self->impl) {
+        self->impl = new GstNvDsRetinaFaceImpl();
+    }
 
     if (!self->engine_file || !self->engine_file[0]) {
         GST_ELEMENT_ERROR(self, RESOURCE, NOT_FOUND,
@@ -189,49 +201,51 @@ static gboolean gst_nvdsretinaface_start(GstBaseTransform* btrans) {
             ("cudaSetDevice failed"), ("%s", cudaGetErrorString(cuerr)));
         return FALSE;
     }
-    cuerr = cudaStreamCreate(&self->cuda_stream);
+    cuerr = cudaStreamCreate(&self->impl->cuda_stream);
     if (cuerr != cudaSuccess) {
         GST_ELEMENT_ERROR(self, RESOURCE, FAILED,
             ("cudaStreamCreate failed"), ("%s", cudaGetErrorString(cuerr)));
         return FALSE;
     }
 
-    self->engine.reset(new mv::RetinaFaceEngine(self->engine_file, self->gpu_id, self->cuda_stream));
-    if (!self->engine->init()) {
+    self->impl->engine.reset(new mv::RetinaFaceEngine(self->engine_file, self->gpu_id, self->impl->cuda_stream));
+    if (!self->impl->engine->init()) {
         GST_ELEMENT_ERROR(self, RESOURCE, FAILED,
             ("failed to initialize RetinaFace engine"), (NULL));
         return FALSE;
     }
 
-    self->postproc.reset(new mv::RetinaFacePostproc(
-        self->engine->inputSize(), 2000, self->gpu_id, self->cuda_stream));
+    self->impl->postproc.reset(new mv::RetinaFacePostproc(
+        self->impl->engine->inputSize(), 2000, self->gpu_id, self->impl->cuda_stream));
 
     if (const char* dump_dir = getenv("MV_DUMP_PREPROC_TENSOR")) {
         cudaError_t dump_err = cudaHostAlloc(
-            &self->h_preproc_dump, self->PREPROC_ELM * sizeof(float), cudaHostAllocDefault);
+            &self->impl->h_preproc_dump, self->impl->PREPROC_ELM * sizeof(float), cudaHostAllocDefault);
         if (dump_err != cudaSuccess) {
             GST_ELEMENT_ERROR(self, RESOURCE, FAILED,
                 ("failed to allocate pinned dump buffer"), (NULL));
             return FALSE;
         }
-        self->dump_preproc = true;
-        self->preproc_dump_dir = dump_dir;
+        self->impl->dump_preproc = true;
+        self->impl->preproc_dump_dir = dump_dir;
         g_mkdir_with_parents(dump_dir, 0755);
     }
 
-    self->started = TRUE;
+    self->impl->started = TRUE;
     return TRUE;
 }
 
 static gboolean gst_nvdsretinaface_stop(GstBaseTransform* btrans) {
     GstNvDsRetinaFace* self = GST_NVDS_RETINAFACE(btrans);
-    self->engine.reset();
-    self->postproc.reset();
-    if (self->cuda_stream) {
-        cudaStreamDestroy(self->cuda_stream);
-        self->cuda_stream = nullptr;
+    if (self->impl) {
+        self->impl->engine.reset();
+        self->impl->postproc.reset();
+        if (self->impl->cuda_stream) {
+            cudaStreamDestroy(self->impl->cuda_stream);
+            self->impl->cuda_stream = nullptr;
+        }
+        self->impl->started = FALSE;
     }
-    self->started = FALSE;
     return TRUE;
 }
 
@@ -342,10 +356,10 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
         return GST_FLOW_ERROR;
     }
 
-    if (actual_batch > self->engine->maxBatchSize()) {
+    if (actual_batch > self->impl->engine->maxBatchSize()) {
         GST_ELEMENT_ERROR(self, STREAM, FAILED,
             ("actual batch size exceeds engine maximum"), ("actual=%d max=%d",
-             actual_batch, self->engine->maxBatchSize()));
+             actual_batch, self->impl->engine->maxBatchSize()));
         return GST_FLOW_ERROR;
     }
 
@@ -358,25 +372,25 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
     }
 
     // Optional diagnostic: dump the preprocessed input tensor for the first frame only.
-    if (self->dump_preproc && self->h_preproc_dump) {
+    if (self->impl->dump_preproc && self->impl->h_preproc_dump) {
         cudaError_t dump_err = cudaMemcpyAsync(
-            self->h_preproc_dump,
+            self->impl->h_preproc_dump,
             tensor_meta->raw_tensor_buffer,
-            self->PREPROC_ELM * sizeof(float),
+            self->impl->PREPROC_ELM * sizeof(float),
             cudaMemcpyDeviceToHost,
-            self->cuda_stream);
+            self->impl->cuda_stream);
         if (dump_err == cudaSuccess && !frames_by_batch.empty() && frames_by_batch[0]) {
-            cudaStreamSynchronize(self->cuda_stream);
+            cudaStreamSynchronize(self->impl->cuda_stream);
             int dump_frame = static_cast<int>(frames_by_batch[0]->frame_num);
-            std::string path = self->preproc_dump_dir + "/preproc_" +
+            std::string path = self->impl->preproc_dump_dir + "/preproc_" +
                 std::to_string(dump_frame) + ".bin";
             FILE* fp = std::fopen(path.c_str(), "wb");
             if (fp) {
-                std::fwrite(self->h_preproc_dump, sizeof(float), self->PREPROC_ELM, fp);
+                std::fwrite(self->impl->h_preproc_dump, sizeof(float), self->impl->PREPROC_ELM, fp);
                 std::fclose(fp);
             }
             write_preproc_sidecar(btrans, frames_by_batch[0], tensor_meta,
-                                  self->preproc_dump_dir, dump_frame);
+                                  self->impl->preproc_dump_dir, dump_frame);
         }
     }
 
@@ -384,7 +398,7 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
     const float* d_conf = nullptr;
     const float* d_landms = nullptr;
     int num_anchors = 0;
-    if (!self->engine->infer(tensor_meta->raw_tensor_buffer, actual_batch,
+    if (!self->impl->engine->infer(tensor_meta->raw_tensor_buffer, actual_batch,
                              &d_loc, &d_conf, &d_landms, &num_anchors)) {
         GST_ELEMENT_ERROR(self, STREAM, FAILED,
             ("RetinaFace inference failed"), (NULL));
@@ -399,7 +413,7 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
             frames_by_batch[b]->source_frame_height);
     }
 
-    auto per_frame_detections = self->postproc->processBatch(
+    auto per_frame_detections = self->impl->postproc->processBatch(
         d_loc, d_conf, d_landms, num_anchors, actual_batch,
         original_dims, self->conf_threshold, self->nms_threshold);
 
@@ -484,7 +498,8 @@ static void gst_nvdsretinaface_class_init(GstNvDsRetinaFaceClass* klass) {
             (GParamFlags)(G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS)));
 }
 
-static void gst_nvdsretinaface_init(GstNvDsRetinaFace* /*self*/) {
+static void gst_nvdsretinaface_init(GstNvDsRetinaFace* self) {
+    self->impl = new GstNvDsRetinaFaceImpl();
 }
 
 extern "C" {

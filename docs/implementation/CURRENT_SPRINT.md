@@ -1,83 +1,92 @@
-# MergenVision Phase 2 — Sprint 04
+# MergenVision Phase 2 — Sprint 05
 
-## Sprint 03 prerequisite status: PASS/COMPLETED
+## Sprint 04 closure status
 
-- `make phase2-foundation-acceptance` passed (exit 0, rerun log at `backend/out/sprint03_foundation_rerun.log`).
-- `git status --short` reviewed; all Sprint 03 changes are preserved.
-- No unresolved Sprint 03 blocker remains.
-
-See `docs/implementation/review_packages/SPRINT-003-CODE-REVIEW-PACKAGE.md` for the final Sprint 03 evidence package.
+- Detector batching + native render: **PASS**.
+- `make phase2-sprint-04-acceptance` exit 0.
+- Review package: `docs/implementation/review_packages/SPRINT-004-CODE-REVIEW-PACKAGE.md`.
+- NvDCF raw tracker ID assignment: **KNOWN_BROKEN / DEFERRED** (all detections receive `UNTRACKED_OBJECT_ID`).
 
 ---
 
 ## Objective
 
-Implement true temporal batched RetinaFace inference and a native GPU annotated-video pipeline.
-
-Primary user outcome: process a local MP4 significantly faster than real time with:
+Deliver the first complete user-visible native GPU recognition vertical slice:
 
 ```text
-NVDEC → nvstreammux temporal batching → nvdspreprocess → one TensorRT enqueue per actual batch
-→ batched CUDA decode/NMS/landmark postprocess → per-frame ordered metadata
-→ optional nvdsosd + NVENC + qtmux → playable annotated MP4
+encoded MP4
+  -> NVDEC / nvstreammux temporal batch
+  -> RetinaFace batched face detection
+  -> CUDA five-point landmark alignment
+  -> batched TensorRT GlintR100 embedding
+  -> GPU L2 normalization
+  -> compact embedding/metadata CPU boundary
+  -> gallery cosine matching
+  -> nvdsosd / NVENC annotated MP4 with name + similarity + detector confidence
 ```
 
-This is a detector batching + native rendering sprint. Tracker, recognition, identity names and canonical reconciliation are NOT in scope.
+Primary user outcome: a single CLI command produces a playable annotated MP4 where each face box shows either a gallery name + cosine similarity + detector score, or `unknown`.
+
+---
 
 ## Out of scope
 
-- NvDCF/ByteTrack tracker correctness fix (tracker stays `off` for the batched/render path; the old batch-1 tracker-capable path is preserved but not exercised by new Sprint 04 acceptance).
-- ArcFace/GlintR100 recognition and five-point CUDA alignment.
-- Gallery enrollment, search, canonical reconciliation.
 - FastAPI endpoints, PostgreSQL, MinIO, Qdrant.
+- Frontend / UI.
 - Multi-GPU scheduling beyond host GPU selection.
-- Livestream/RTSP/HLS, audio preservation.
-- CPU/OpenCV/NumPy production rendering or inference fallback.
+- Livestream / RTSP / HLS.
+- Canonical cross-scene identity reconciliation.
+- Tracker batch>1 correctness fix (remains deferred).
+- GPU gallery search optimization (CPU matching is sufficient for the first slice).
+- Detector re-calibration / model swap.
+- Python/OpenCV/NumPy production decode, alignment, or inference fallback.
+
+---
 
 ## Deliverables
 
-1. Dynamic engine contract validation (tensor names, shapes, FP32 input, optimization profile supports 1/4/8/16).
-2. `make phase2-sprint-04-feasibility` proving single-source temporal batches > 1 and partial-EOS flushing on DeepStream 9.0.
-3. Batched `RetinaFacePostproc` and plugin transform that performs one TensorRT enqueue per actual batch.
-4. Frame/tensor mapping using `NvDsFrameMeta.batch_id` with validation and synthetic tests.
-5. Worker architecture split: `options`, `detector_pipeline`, `batch_contract`, `metadata_writer`, `annotated_video_sink`.
-6. Optional GPU-native annotated MP4 branch (`--annotated-output`) using `nvdsosd` + `nvv4l2h264enc` + `qtmux`.
-7. Updated Python `NativeDetectorClient` with batch/render options and validation tests.
-8. Immutable batch-1 baseline capture under `backend/out/sprint-04/baseline_batch1/`.
-9. Sprint 04 make targets:
-   - `phase2-sprint-04-feasibility`
-   - `phase2-sprint-04-build`
-   - `phase2-sprint-04-unit`
-   - `phase2-sprint-04-eos`
-   - `phase2-sprint-04-batch-parity`
-   - `phase2-sprint-04-determinism`
-   - `phase2-sprint-04-render`
-   - `phase2-sprint-04-hotpath`
-   - `phase2-sprint-04-benchmark`
-   - `phase2-sprint-04-acceptance`
-10. Final review package: `docs/implementation/review_packages/SPRINT-004-CODE-REVIEW-PACKAGE.md`.
+1. Native worker support for `--mode fast` and `--mode tracked` with explicit `--gallery <path>` and `--threshold`/`--margin` overrides.
+2. DeepStream 9.0 recognition path using `nvdspreprocess` SGIE/object mode + custom five-point tensor-preparation library, feeding standard `nvinfer` with the existing GlintR100 TensorRT engine. If the variable face-count contract is not provably correct, fallback to a dedicated `gst-nvdsfacerecognizer` element using the `gst-nvdsvisionencoder-c` structure as reference.
+3. Pitched RGBA/NVMM CUDA alignment kernel with explicit frame surface pointer, pitch, batch index, per-face affine matrix, bilinear interpolation, and RGB NCHW output.
+4. GPU L2 normalization with finite/zero-norm handling.
+5. CPU C++ gallery loader/matcher with top1/top2 cosine + margin decision; unknown remains unknown.
+6. Owned custom metadata `mv-face-recognition` attached via copy/release callbacks.
+7. OSD label format:
+   - fast mode: `{name} | sim:{s} | det:{c}`
+   - tracked mode: `T{id} | {name} | sim:{s} | det:{c}`
+   - unknown: `unknown | sim:{s} | det:{c}`
+8. Native GPU annotated MP4 render (NVENC, qtmux) for fast mode and tracked validation mode.
+9. JSONL recognition metadata: frame/pts/bbox/landmarks/detector score/raw track ID/identity ID/name/status/top1/top2/margin.
+10. Updated Python layered backend (`app.cli annotate ...`) with mode, batch-size, gallery, threshold/margin, annotated output, and render toggles.
+11. Targeted gates/tests for artifact/engine, landmark order, alignment parity, preprocess parity, engine parity, face batch parity, gallery, detector regression, short E2E, tracked E2E, long E2E, hot-path, determinism.
+12. Updated `Makefile` Sprint 05 targets and `phase2-sprint-05-acceptance` aggregate command.
+13. Updated `docs/implementation/IMPLEMENTATION_DETAILS.md` and `docs/implementation/REFERENCE_DECISION_LOG.md`.
+14. Immutable review package: `docs/implementation/review_packages/SPRINT-005-CODE-REVIEW-PACKAGE.md`.
+
+---
 
 ## Acceptance
 
-1. Sprint 03 foundation remains green through the entire Sprint 04 work.
-2. Feasibility gate proves actual temporal batching with correct `batch_id` mapping and EOS partial flushing.
-3. True batch inference: `enqueue_count < processed_frame_count` for `batch-size > 1`.
-4. Batch 4 works; batch 8 and 16 each pass or are honestly rejected with evidence.
-5. Batch-1 vs selected-batch semantic parity passes under frozen gates.
-6. EOS behavior verified for frame counts 1, 3, 4, 5, 15, 16, 17, 50.
-7. No `nvtracker` is instantiated in the batch/render pipeline.
-8. Annotated MP4 is playable, has H.264 stream, matching duration, and no fake tracker IDs or names.
-9. Hot-path contract passes (no full-frame D2H, no full detector tensor D2H, no per-frame cudaMalloc/free, no CPU postprocess).
-10. Benchmark report contains real measurements and selects one runtime batch size from data.
-11. `git diff --check` passes; no video/model/engine committed.
-12. No git commit/push.
+1. `friendsshort_recognized_annotated.mp4` and `Friends_recognized_annotated.mp4` are playable and show real gallery names or honest `unknown`.
+2. `recognized_detections.jsonl` and `run_manifest.json` are produced with the fields listed above.
+3. Alignment/contact-sheet artifact is generated and inspected.
+4. Single native GPU pass; no Python/OpenCV production decode/alignment/inference.
+5. No full decoded frame D2H; only compact metadata/normalized embeddings cross to CPU.
+6. Output frame count and duration match the input video.
+7. Fast mode uses detector batch-size=8, tracker off, render on, and is faster than realtime (target ≥100 FPS effective).
+8. Tracked validation mode produces real raw tracker IDs; any remaining `UNTRACKED_OBJECT_ID` causes FAIL.
+9. `make phase2-sprint-05-acceptance` exits 0.
 
-## Chosen approach
+---
 
-- **Integrated render (A):** the worker optionally adds `nvdsosd → nvv4l2h264enc → qtmux → filesink` to the same pipeline so metadata and annotated MP4 are produced in one pass.
-- Old batch-1 tracker-capable code path remains but is not used for Sprint 04 acceptance.
-- `nvdspreprocess` `network-input-shape` will be generated per configured max batch at runtime; TensorRT will run with the actual batch size via `setInputShape`.
+## Non-goals
+
+- Production biometric calibration claim (label as `demo_uncalibrated_threshold` if needed).
+- Tracker/canonical cross-scene reconciliation.
+- GPU gallery search optimization.
+
+---
 
 ## Status
 
-IN_PROGRESS — Build mode approved.
+IN_PROGRESS — Sprint 05 implementation starting.

@@ -16,7 +16,7 @@ DOCKER_RUN := docker run --rm --gpus "device=$(GPU_DEVICE)" \
 	-v "$(REPO):/app" \
 	-w /app
 
-.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-frame-identity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance
+.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-frame-identity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance backend-batch-invariants backend-cli-tracker-reject backend-batch-parity backend-batch-determinism backend-render-parity backend-batch-benchmark phase2-sprint-04-acceptance
 
 artifacts-check:
 	@echo "=== Artifact manifest check ==="
@@ -77,6 +77,30 @@ backend-video-smoke: backend-native-build
 	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/Friends.mp4 $(OUT_DIR)/video_smoke 0
 	$(DOCKER_RUN) --entrypoint python3 $(CONTAINER) /app/backend/scripts/sanity_check_detections.py $(OUT_DIR)/video_smoke/detections.jsonl
 
+backend-batch-invariants:
+	@echo "=== Backend batch-N source invariants ==="
+	cd backend && python3 -m pytest tests/integration/test_batch_invariants.py -q
+
+backend-cli-tracker-reject: backend-native-build
+	@echo "=== CLI rejects tracker + batch-size > 1 ==="
+	python3 backend/tests/native/test_cli_tracker_batch_reject.py
+
+backend-batch-parity: backend-native-build
+	@echo "=== Batch detection parity (1 vs N, tracker off) ==="
+	python3 backend/tests/native/test_batch_detection_parity.py
+
+backend-batch-determinism: backend-native-build
+	@echo "=== Batch-N determinism ==="
+	python3 backend/tests/native/test_batch_determinism.py
+
+backend-render-parity: backend-native-build
+	@echo "=== Annotated render parity ==="
+	python3 backend/tests/native/test_render_parity.py
+
+backend-batch-benchmark: backend-native-build
+	@echo "=== Batch benchmark (Friends.mp4, batch=1 vs batch=16) ==="
+	python3 backend/tests/native/test_batch_benchmark.py
+
 backend-cli-smoke:
 	@echo "=== Backend CLI smoke ==="
 	cd backend && python3 -m app.cli detect \
@@ -105,3 +129,10 @@ phase2-foundation-acceptance: artifacts-check backend-unit-strict backend-cli-sm
 	@echo "=== git diff --check ==="
 	git diff --check
 	@echo "Phase2 foundation acceptance PASSED"
+
+phase2-sprint-04-acceptance: artifacts-check backend-unit-strict backend-native-build backend-native-unit \
+    backend-batch-invariants backend-cli-tracker-reject backend-batch-parity backend-batch-determinism \
+    backend-render-parity backend-batch-benchmark backend-video-smoke
+	@echo "=== git diff --check ==="
+	git diff --check
+	@echo "Phase2 Sprint 04 acceptance PASSED"

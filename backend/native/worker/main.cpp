@@ -96,6 +96,15 @@ static bool parse_worker_options(int argc, char** argv, WorkerOptions* opts) {
             return false;
         }
     }
+    if (opts->tracker_enabled && opts->batch_size > 1) {
+        if (!std::getenv("MV_ALLOW_TRACKER_BATCH")) {
+            g_printerr("NvMOT contract violation: tracker requires batch-size=1. "
+                        "Use --batch-size 1 with --tracker or disable tracker with --tracker off.\n");
+            return false;
+        }
+        g_warning("MV_ALLOW_TRACKER_BATCH set: allowing tracker with batch-size=%d (experimental)",
+                  opts->batch_size);
+    }
     return true;
 }
 
@@ -170,6 +179,16 @@ static void xset_bool_if_exists(GObject* obj, const gchar* name, gboolean value)
     }
 }
 
+static void configure_queue(GstElement* queue, int max_buffers) {
+    if (!queue) return;
+    // Bounded frame count; no byte/time limits, no leak, preserve data until EOS.
+    xset_int_if_exists(G_OBJECT(queue), "max-size-buffers", max_buffers);
+    xset_int_if_exists(G_OBJECT(queue), "max-size-bytes", 0);
+    xset_int_if_exists(G_OBJECT(queue), "max-size-time", 0);
+    xset_int_if_exists(G_OBJECT(queue), "leaky", 0);          // no leak
+    xset_bool_if_exists(G_OBJECT(queue), "flush-on-eos", FALSE);
+}
+
 static void writeJsonEscapeString(FILE* f, const char* s) {
     fputc('"', f);
     for (; *s; ++s) {
@@ -228,6 +247,15 @@ static const FaceLandmarkMeta* find_landmark_meta(NvDsObjectMeta* obj_meta) {
     return nullptr;
 }
 
+struct FrameDetections {
+    int64_t frame_num;
+    double pts_ms;
+    int width;
+    int height;
+    struct Det { int det_id; uint64_t track_id; float x1, y1, x2, y2, score; float landmarks[10]; };
+    std::vector<Det> dets;
+};
+
 static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeInfo* info, gpointer u_data) {
     (void)pad;
     AppContext* ctx = (AppContext*)u_data;
@@ -237,6 +265,9 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
 
     ctx->enqueue_count++;
 
+    std::vector<FrameDetections> frame_batch;
+    frame_batch.reserve(8);
+
     nvds_acquire_meta_lock(batch_meta);
     for (NvDsMetaList* l_frame = batch_meta->frame_meta_list; l_frame != NULL; l_frame = l_frame->next) {
         NvDsFrameMeta* frame_meta = (NvDsFrameMeta*)l_frame->data;
@@ -244,13 +275,15 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
             ctx->t_first_frame = std::chrono::steady_clock::now();
             ctx->first_frame = false;
         }
-
         ctx->frames_processed++;
-        fprintf(ctx->detections_f, "{\"frame\":%" PRId64 ",\"pts_ms\":%.3f,\"width\":%d,\"height\":%d,\"detections\":[",
-            (int64_t)frame_meta->frame_num, (double)frame_meta->buf_pts / 1000000.0,
-            frame_meta->source_frame_width, frame_meta->source_frame_height);
 
-        int det_count = 0;
+        FrameDetections fd;
+        fd.frame_num = (int64_t)frame_meta->frame_num;
+        fd.pts_ms = (double)frame_meta->buf_pts / 1000000.0;
+        fd.width = frame_meta->source_frame_width;
+        fd.height = frame_meta->source_frame_height;
+
+        int det_id = 0;
         for (NvDsMetaList* l_obj = frame_meta->obj_meta_list; l_obj != NULL; l_obj = l_obj->next) {
             NvDsObjectMeta* obj_meta = (NvDsObjectMeta*)l_obj->data;
             if (obj_meta->class_id != 0) continue;
@@ -262,9 +295,14 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
             float score = obj_meta->confidence;
 
             const FaceLandmarkMeta* lm = find_landmark_meta(obj_meta);
-            float landmarks[10] = {};
+            FrameDetections::Det det;
+            det.det_id = det_id++;
+            det.track_id = obj_meta->object_id;
+            det.x1 = x1; det.y1 = y1; det.x2 = x2; det.y2 = y2;
+            det.score = score;
+            std::memset(det.landmarks, 0, sizeof(det.landmarks));
             if (lm) {
-                std::memcpy(landmarks, lm->landmarks, sizeof(landmarks));
+                std::memcpy(det.landmarks, lm->landmarks, sizeof(det.landmarks));
             }
 
             bool sane = score >= 0.0f && score <= 1.0f
@@ -273,40 +311,56 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
                 && x2 <= frame_meta->source_frame_width
                 && y2 <= frame_meta->source_frame_height;
             for (int k = 0; sane && k < 5; ++k) {
-                float lx = landmarks[k * 2];
-                float ly = landmarks[k * 2 + 1];
+                float lx = det.landmarks[k * 2];
+                float ly = det.landmarks[k * 2 + 1];
                 sane = lx >= 0.0f && ly >= 0.0f && lx <= frame_meta->source_frame_width && ly <= frame_meta->source_frame_height;
             }
             if (!sane) {
-                g_warning("Frame %d det %d failed semantic sanity; skipping JSON write",
-                    frame_meta->frame_num, det_count);
+                g_warning("Frame %" PRId64 " det %d failed semantic sanity; skipping JSON write",
+                    fd.frame_num, det.det_id);
                 continue;
             }
+            fd.dets.push_back(det);
+        }
+        frame_batch.push_back(std::move(fd));
+    }
+    nvds_release_meta_lock(batch_meta);
 
-            uint64_t track_id = obj_meta->object_id;
-            if (det_count > 0) fprintf(ctx->detections_f, ",");
-            fprintf(ctx->detections_f,
-                "{\"det_id\":%d,\"track_id\":%" PRIu64 ",\"x1\":%.3f,\"y1\":%.3f,\"x2\":%.3f,\"y2\":%.3f,\"score\":%.4f,\"landmarks\":[",
-                det_count, track_id, x1, y1, x2, y2, score);
+    // Serialize and accumulate tracks outside the metadata lock.
+    for (const auto& fd : frame_batch) {
+        fprintf(ctx->detections_f, "{\"frame\":%" PRId64 ",\"pts_ms\":%.3f,\"width\":%d,\"height\":%d,\"detections\":[",
+            fd.frame_num, fd.pts_ms, fd.width, fd.height);
+        for (size_t i = 0; i < fd.dets.size(); ++i) {
+            const auto& d = fd.dets[i];
+            if (i > 0) fprintf(ctx->detections_f, ",");
+            if (ctx->options.tracker_enabled) {
+                fprintf(ctx->detections_f,
+                    "{\"det_id\":%d,\"track_id\":%" PRIu64 ",\"x1\":%.3f,\"y1\":%.3f,\"x2\":%.3f,\"y2\":%.3f,\"score\":%.4f,\"landmarks\":[",
+                    d.det_id, d.track_id, d.x1, d.y1, d.x2, d.y2, d.score);
+            } else {
+                fprintf(ctx->detections_f,
+                    "{\"det_id\":%d,\"x1\":%.3f,\"y1\":%.3f,\"x2\":%.3f,\"y2\":%.3f,\"score\":%.4f,\"landmarks\":[",
+                    d.det_id, d.x1, d.y1, d.x2, d.y2, d.score);
+            }
             for (int k = 0; k < 10; ++k) {
                 if (k) fprintf(ctx->detections_f, ",");
-                fprintf(ctx->detections_f, "%.3f", landmarks[k]);
+                fprintf(ctx->detections_f, "%.3f", d.landmarks[k]);
             }
             fprintf(ctx->detections_f, "]}");
 
-            TrackEntry e;
-            e.frame_num = frame_meta->frame_num;
-            e.pts_ms = (double)frame_meta->buf_pts / 1000000.0;
-            e.x1 = x1; e.y1 = y1; e.x2 = x2; e.y2 = y2;
-            std::memcpy(e.landmarks, landmarks, sizeof(e.landmarks));
-            e.score = score;
-            ctx->tracks[track_id].push_back(e);
             ctx->total_detections++;
-            det_count++;
+            if (ctx->options.tracker_enabled) {
+                TrackEntry e;
+                e.frame_num = fd.frame_num;
+                e.pts_ms = fd.pts_ms;
+                e.x1 = d.x1; e.y1 = d.y1; e.x2 = d.x2; e.y2 = d.y2;
+                std::memcpy(e.landmarks, d.landmarks, sizeof(e.landmarks));
+                e.score = d.score;
+                ctx->tracks[d.track_id].push_back(e);
+            }
         }
         fprintf(ctx->detections_f, "]}\n");
     }
-    nvds_release_meta_lock(batch_meta);
     return GST_PAD_PROBE_OK;
 }
 
@@ -494,6 +548,7 @@ int main(int argc, char* argv[]) {
     GstElement* fakesink = nullptr;
     GstElement* demux = nullptr;
     GstElement* queue = nullptr;
+    GstElement* post_det_queue = nullptr;
 
     if (opts.render) {
         osd = gst_element_factory_make("nvdsosd", "osd");
@@ -503,6 +558,7 @@ int main(int argc, char* argv[]) {
         filesink = gst_element_factory_make("filesink", "file-sink");
         demux = gst_element_factory_make("nvstreamdemux", "render-demux");
         queue = gst_element_factory_make("queue", "post-demux-queue");
+        post_det_queue = gst_element_factory_make("queue", "post-detector-queue");
     } else {
         fakesink = gst_element_factory_make("fakesink", "fake-sink");
         if (!opts.tracker_enabled) {
@@ -514,7 +570,7 @@ int main(int argc, char* argv[]) {
     if (!pipeline || !source || !qtdemux || !h264parse || !decoder || !streammux ||
         !preprocess || !retinaface ||
         (opts.tracker_enabled && !tracker) ||
-        (opts.render && (!osd || !encoder || !encparse || !muxer || !filesink || !demux || !queue)) ||
+        (opts.render && (!osd || !encoder || !encparse || !muxer || !filesink || !demux || !queue || !post_det_queue)) ||
         (!opts.render && !fakesink) ||
         (!opts.render && !queue) ||
         (!opts.render && !opts.tracker_enabled && !demux)) {
@@ -568,6 +624,17 @@ int main(int argc, char* argv[]) {
     xset_int_if_exists(G_OBJECT(streammux), "height", 720);
     xset_string_if_exists(G_OBJECT(streammux), "config-file-path", streammux_config.c_str());
     int mux_pool_size = std::max(4, opts.batch_size * 2);
+    if (opts.render) {
+        // Render path retains more batched buffers due to nvstreamdemux parent-batch
+        // retention; give the mux enough pool to avoid blocking upstream batching.
+        // Targeted A/B on Friends.mp4 batch=8 tracker=off render=on shows pool=16
+        // matches pool=128 throughput within 0.6% and produces clean EOS.
+        mux_pool_size = std::max(16, opts.batch_size * 2);
+    }
+    if (const char* env_pool = std::getenv("MV_MUX_POOL_SIZE")) {
+        int v = std::atoi(env_pool);
+        if (v > 0) mux_pool_size = v;
+    }
     xset_int_if_exists(G_OBJECT(streammux), "buffer-pool-size", mux_pool_size);
     xset_int_if_exists(G_OBJECT(streammux), "failsafe-flush-count", mux_pool_size - 1);
     xset_bool_if_exists(G_OBJECT(streammux), "live-source", FALSE);
@@ -605,8 +672,8 @@ int main(int argc, char* argv[]) {
         g_print("tracker-config=%s\n", opts.tracker_config.c_str());
         if (opts.render) {
             gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, tracker, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, tracker, demux, NULL)) {
+                preprocess, retinaface, tracker, post_det_queue, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
+            if (!gst_element_link_many(streammux, preprocess, retinaface, tracker, post_det_queue, demux, NULL)) {
                 g_printerr("Failed to link streammux->...->demux\n");
                 return -1;
             }
@@ -622,8 +689,8 @@ int main(int argc, char* argv[]) {
     } else {
         if (opts.render) {
             gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, demux, NULL)) {
+                preprocess, retinaface, post_det_queue, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
+            if (!gst_element_link_many(streammux, preprocess, retinaface, post_det_queue, demux, NULL)) {
                 g_printerr("Failed to link streammux->...->demux\n");
                 return -1;
             }
