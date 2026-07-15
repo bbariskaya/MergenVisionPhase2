@@ -33,6 +33,11 @@ RetinaFacePostproc::RetinaFacePostproc(int input_size, int max_candidates, int d
     checkCuda(cudaMalloc(&d_out_scores_, max_candidates_ * sizeof(float)), "out scores");
     checkCuda(cudaMalloc(&d_out_count_, sizeof(int)), "out count");
 
+    checkCuda(cudaMallocHost(&h_out_boxes_, max_candidates_ * 4 * sizeof(float)), "host out boxes");
+    checkCuda(cudaMallocHost(&h_out_landmarks_, max_candidates_ * 10 * sizeof(float)), "host out landmarks");
+    checkCuda(cudaMallocHost(&h_out_scores_, max_candidates_ * sizeof(float)), "host out scores");
+    checkCuda(cudaMallocHost(&h_out_count_, sizeof(int)), "host out count");
+
     std::vector<float> host_priors(num_priors_ * 4);
     int idx = 0;
     const int steps[] = {8, 16, 32};
@@ -70,6 +75,11 @@ RetinaFacePostproc::~RetinaFacePostproc() {
     cudaFree(d_out_landmarks_);
     cudaFree(d_out_scores_);
     cudaFree(d_out_count_);
+
+    cudaFreeHost(h_out_boxes_);
+    cudaFreeHost(h_out_landmarks_);
+    cudaFreeHost(h_out_scores_);
+    cudaFreeHost(h_out_count_);
 }
 
 void RetinaFacePostproc::generatePriors() {
@@ -104,6 +114,7 @@ std::vector<FaceDetection> RetinaFacePostproc::processFrame(
     checkCuda(cudaMemsetAsync(d_cand_landmarks_, 0, max_candidates_ * 10 * sizeof(float), stream_), "cand landmarks memset");
     checkCuda(cudaMemsetAsync(d_keep_, 0, max_candidates_ * sizeof(uint8_t), stream_), "keep memset");
     checkCuda(cudaMemsetAsync(d_counter_, 0, sizeof(int), stream_), "counter memset");
+    checkCuda(cudaMemsetAsync(d_out_count_, 0, sizeof(int), stream_), "out count memset");
 
     checkCuda((cudaError_t)mergenvision_retinaface_decode_batch(
         d_loc, d_conf, d_landms, d_priors_,
@@ -125,46 +136,37 @@ std::vector<FaceDetection> RetinaFacePostproc::processFrame(
         original_width, original_height, conf_threshold,
         d_out_boxes_, d_out_landmarks_, d_out_scores_, d_out_count_, stream_), "scale");
 
-    // Compact output D2H on the same stream; only then synchronize once.
-    int out_count = 0;
-    checkCuda(cudaMemcpyAsync(&out_count, d_out_count_, sizeof(int), cudaMemcpyDeviceToHost, stream_), "outcount D2H");
+    // Stage 1: copy only the compact output count and synchronize so we know
+    // exactly how many detections were produced. This avoids copying the full
+    // detector output to the host every frame (production hot-path contract).
+    checkCuda(cudaMemcpyAsync(h_out_count_, d_out_count_, sizeof(int), cudaMemcpyDeviceToHost, stream_), "outcount D2H");
+    checkCuda(cudaStreamSynchronize(stream_), "count sync");
+
+    int out_count = *h_out_count_;
+    if (out_count > max_candidates_) out_count = max_candidates_;
+
+    // Stage 2: copy only the compact metadata that actually survived NMS.
+    if (out_count > 0) {
+        checkCuda(cudaMemcpyAsync(h_out_boxes_, d_out_boxes_, out_count * 4 * sizeof(float), cudaMemcpyDeviceToHost, stream_), "boxes D2H");
+        checkCuda(cudaMemcpyAsync(h_out_landmarks_, d_out_landmarks_, out_count * 10 * sizeof(float), cudaMemcpyDeviceToHost, stream_), "landmarks D2H");
+        checkCuda(cudaMemcpyAsync(h_out_scores_, d_out_scores_, out_count * sizeof(float), cudaMemcpyDeviceToHost, stream_), "scores D2H");
+        checkCuda(cudaStreamSynchronize(stream_), "metadata sync");
+    }
     if (out_count <= 0) {
-        checkCuda(cudaStreamSynchronize(stream_), "final sync empty");
         return {};
     }
     if (out_count > max_candidates_) out_count = max_candidates_;
-
-    std::vector<float> boxes(out_count * 4);
-    std::vector<float> landmarks(out_count * 10);
-    std::vector<float> scores(out_count);
-    checkCuda(cudaMemcpyAsync(boxes.data(), d_out_boxes_, out_count * 4 * sizeof(float), cudaMemcpyDeviceToHost, stream_), "boxes D2H");
-    checkCuda(cudaMemcpyAsync(landmarks.data(), d_out_landmarks_, out_count * 10 * sizeof(float), cudaMemcpyDeviceToHost, stream_), "landmarks D2H");
-    checkCuda(cudaMemcpyAsync(scores.data(), d_out_scores_, out_count * sizeof(float), cudaMemcpyDeviceToHost, stream_), "scores D2H");
-
-    if (debug_) {
-        int host_count = 0;
-        checkCuda(cudaMemcpyAsync(&host_count, d_counter_, sizeof(int), cudaMemcpyDeviceToHost, stream_), "counter D2H debug");
-    }
-
-    // Single synchronization point per frame.
-    checkCuda(cudaStreamSynchronize(stream_), "final sync");
-
-    if (debug_) {
-        int host_count = 0;
-        checkCuda(cudaMemcpy(&host_count, d_counter_, sizeof(int), cudaMemcpyDeviceToHost), "counter D2H debug after sync");
-        fprintf(stderr, "decode candidates=%d post-nms=%d\n", host_count, out_count);
-    }
 
     std::vector<FaceDetection> result;
     result.reserve(out_count);
     for (int i = 0; i < out_count; ++i) {
         FaceDetection d;
-        d.x1 = boxes[i * 4 + 0];
-        d.y1 = boxes[i * 4 + 1];
-        d.x2 = boxes[i * 4 + 2];
-        d.y2 = boxes[i * 4 + 3];
-        for (int k = 0; k < 10; ++k) d.landmarks[k] = landmarks[i * 10 + k];
-        d.score = scores[i];
+        d.x1 = h_out_boxes_[i * 4 + 0];
+        d.y1 = h_out_boxes_[i * 4 + 1];
+        d.x2 = h_out_boxes_[i * 4 + 2];
+        d.y2 = h_out_boxes_[i * 4 + 3];
+        for (int k = 0; k < 10; ++k) d.landmarks[k] = h_out_landmarks_[i * 10 + k];
+        d.score = h_out_scores_[i];
         result.push_back(d);
     }
     return result;

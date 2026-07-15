@@ -6,7 +6,7 @@ GPU_DEVICE ?= 0
 NATIVE_SRC := /app/backend/native
 NATIVE_BUILD := /app/backend/native/build
 WORKER := /app/backend/native/build/deepstream_face_worker
-GST_PLUGIN_PATH := /app/backend/native/build
+GST_PLUGIN_PATH := /app/backend/native/build/gst-plugins
 TEST_VIDEOS := /app/backend/artifacts/videos
 OUT_DIR := /app/backend/out
 
@@ -16,7 +16,7 @@ DOCKER_RUN := docker run --rm --gpus "device=$(GPU_DEVICE)" \
 	-v "$(REPO):/app" \
 	-w /app
 
-.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance
+.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-frame-identity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance
 
 artifacts-check:
 	@echo "=== Artifact manifest check ==="
@@ -49,10 +49,20 @@ backend-native-smoke:
 	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/friendsshort_50f.mp4 $(OUT_DIR)/sprint-02-smoke 0
 	$(DOCKER_RUN) --entrypoint python3 $(CONTAINER) /app/backend/scripts/sanity_check_detections.py $(OUT_DIR)/sprint-02-smoke/detections.jsonl
 
-backend-detector-parity: backend-native-build
-	@echo "=== Detector parity vs CPU oracle ==="
+backend-detector-pipeline-parity: backend-native-build
+	@echo "=== Detector pipeline parity vs CPU oracle ==="
 	$(DOCKER_RUN) --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/friendsshort_50f.mp4 $(OUT_DIR)/sprint01_50f_acceptance 0
-	python3 backend/tests/native/test_detector_parity.py
+	python3 backend/tests/native/test_detector_pipeline_parity.py
+
+backend-detector-frame-identity: backend-native-build
+	@echo "=== Detector preprocess tensor frame identity gate ==="
+	$(DOCKER_RUN) -e MV_DUMP_PREPROC_TENSOR=/app/backend/out/preproc_dump --entrypoint $(WORKER) $(CONTAINER) $(TEST_VIDEOS)/friendsshort_50f.mp4 $(OUT_DIR)/frame_identity_smoke 0
+	docker run --rm -v "$(REPO):/app" -w /app --entrypoint chmod $(CONTAINER) -R a+rw /app/backend/out/preproc_dump
+	python3 backend/tests/native/test_detector_frame_identity.py
+
+backend-detector-engine-parity: backend-native-build
+	@echo "=== Detector engine/tensor parity (ONNX vs TensorRT) ==="
+	python3 backend/tests/native/test_detector_engine_parity.py
 
 backend-detector-determinism: backend-native-build
 	@echo "=== Detector determinism repeated run check ==="
@@ -91,7 +101,7 @@ phase2-sprint-01-acceptance: artifacts-check backend-unit-strict frontend-test f
 	@echo "Phase2 Sprint 01 acceptance PASSED (native parity/hot-path targets maintained separately)"
 
 phase2-foundation-acceptance: artifacts-check backend-unit-strict backend-cli-smoke sprint-02-acceptance \
-    backend-detector-parity backend-detector-determinism backend-hotpath backend-video-smoke
+    backend-detector-frame-identity backend-detector-pipeline-parity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke
 	@echo "=== git diff --check ==="
 	git diff --check
 	@echo "Phase2 foundation acceptance PASSED"

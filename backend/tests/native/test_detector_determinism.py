@@ -18,7 +18,8 @@ REPO = Path(__file__).resolve().parents[3]
 CONTAINER = "nvcr.io/nvidia/deepstream:9.0-triton-multiarch"
 WORKER = "/app/backend/native/build/deepstream_face_worker"
 VIDEO = "/app/backend/artifacts/videos/friendsshort_50f.mp4"
-RUNS = 3
+# Sprint 03 Foundation Closure requires 20 independent runs for determinism gate.
+RUNS = 20
 
 
 def _run_worker(run_dir_name: str) -> Path:

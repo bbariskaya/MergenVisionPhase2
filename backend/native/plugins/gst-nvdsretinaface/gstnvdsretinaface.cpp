@@ -10,7 +10,11 @@
  * landmark decode, then attaches NvDsObjectMeta for each detected face.
  * No full detector output tensor is copied to the host.
  */
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <string>
+#include <fstream>
 
 #include <gst/gst.h>
 #include <gst/base/gstbasetransform.h>
@@ -52,6 +56,12 @@ struct GstNvDsRetinaFace {
     std::unique_ptr<mv::RetinaFacePostproc> postproc;
     cudaStream_t cuda_stream = nullptr;
     gboolean started = FALSE;
+
+    // Diagnostic (off by default): dump preprocessed input tensor per frame.
+    static constexpr size_t PREPROC_ELM = 1 * 3 * 640 * 640;
+    float* h_preproc_dump = nullptr;
+    bool dump_preproc = false;
+    std::string preproc_dump_dir;
 };
 
 struct GstNvDsRetinaFaceClass {
@@ -132,6 +142,10 @@ static void gst_nvdsretinaface_finalize(GObject* object) {
         cudaStreamDestroy(self->cuda_stream);
         self->cuda_stream = nullptr;
     }
+    if (self->h_preproc_dump) {
+        cudaFreeHost(self->h_preproc_dump);
+        self->h_preproc_dump = nullptr;
+    }
     G_OBJECT_CLASS(gst_nvdsretinaface_parent_class)->finalize(object);
 }
 
@@ -167,6 +181,19 @@ static gboolean gst_nvdsretinaface_start(GstBaseTransform* btrans) {
     self->postproc.reset(new mv::RetinaFacePostproc(
         self->engine->inputSize(), 2000, self->gpu_id, self->cuda_stream));
 
+    if (const char* dump_dir = getenv("MV_DUMP_PREPROC_TENSOR")) {
+        cudaError_t dump_err = cudaHostAlloc(
+            &self->h_preproc_dump, self->PREPROC_ELM * sizeof(float), cudaHostAllocDefault);
+        if (dump_err != cudaSuccess) {
+            GST_ELEMENT_ERROR(self, RESOURCE, FAILED,
+                ("failed to allocate pinned dump buffer"), (NULL));
+            return FALSE;
+        }
+        self->dump_preproc = true;
+        self->preproc_dump_dir = dump_dir;
+        g_mkdir_with_parents(dump_dir, 0755);
+    }
+
     self->started = TRUE;
     return TRUE;
 }
@@ -181,6 +208,42 @@ static gboolean gst_nvdsretinaface_stop(GstBaseTransform* btrans) {
     }
     self->started = FALSE;
     return TRUE;
+}
+
+// Test-only helper. Writes a JSON sidecar describing the dumped tensor.
+// Only called when MV_DUMP_PREPROC_TENSOR is set.
+static void write_preproc_sidecar(GstBaseTransform* btrans,
+                                  NvDsFrameMeta* frame_meta,
+                                  NvDsPreProcessTensorMeta* tensor_meta,
+                                  const std::string& dump_dir,
+                                  int frame_num) {
+    std::string path = dump_dir + "/preproc_" + std::to_string(frame_num) + ".json";
+    std::ofstream out(path);
+    if (!out) return;
+
+    const gchar* caps_str = "unknown";
+    GstCaps* caps = gst_pad_get_current_caps(GST_BASE_TRANSFORM_SINK_PAD(btrans));
+    if (caps) {
+        GstStructure* s = gst_caps_get_structure(caps, 0);
+        if (s) caps_str = gst_structure_to_string(s);
+    }
+
+    out << "{\n";
+    out << "  \"frame_num\": " << frame_num << ",\n";
+    out << "  \"buf_pts\": " << (frame_meta ? frame_meta->buf_pts : -1) << ",\n";
+    out << "  \"source_id\": " << (frame_meta ? static_cast<int>(frame_meta->source_id) : -1) << ",\n";
+    out << "  \"batch_id\": " << (frame_meta ? static_cast<int>(frame_meta->batch_id) : -1) << ",\n";
+    out << "  \"original_width\": " << (frame_meta ? frame_meta->source_frame_width : 0) << ",\n";
+    out << "  \"original_height\": " << (frame_meta ? frame_meta->source_frame_height : 0) << ",\n";
+    out << "  \"tensor_shape\": [1, 3, 640, 640],\n";
+    out << "  \"tensor_dtype\": \"float32\",\n";
+    out << "  \"tensor_layout\": \"NCHW\",\n";
+    out << "  \"tensor_size_bytes\": " << (1 * 3 * 640 * 640 * sizeof(float)) << ",\n";
+    out << "  \"effective_conf_threshold\": " << GST_NVDS_RETINAFACE(btrans)->conf_threshold << ",\n";
+    out << "  \"source_caps\": \"" << caps_str << "\"\n";
+    out << "}\n";
+
+    if (caps) gst_caps_unref(caps);
 }
 
 static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
@@ -222,17 +285,6 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
         return GST_FLOW_ERROR;
     }
 
-    const float* d_loc = nullptr;
-    const float* d_conf = nullptr;
-    const float* d_landms = nullptr;
-    int num_anchors = 0;
-    if (!self->engine->infer(tensor_meta->raw_tensor_buffer, 1,
-                             &d_loc, &d_conf, &d_landms, &num_anchors)) {
-        GST_ELEMENT_ERROR(self, STREAM, FAILED,
-            ("RetinaFace inference failed"), (NULL));
-        return GST_FLOW_ERROR;
-    }
-
     // For batch-size 1 there is one frame meta.
     NvDsFrameMeta* frame_meta = nullptr;
     if (batch_meta->frame_meta_list) {
@@ -241,6 +293,40 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
     if (!frame_meta) {
         GST_ELEMENT_ERROR(self, STREAM, FAILED,
             ("no frame meta"), (NULL));
+        return GST_FLOW_ERROR;
+    }
+
+    // Optional diagnostic: dump the preprocessed input tensor to host.
+    if (self->dump_preproc && self->h_preproc_dump) {
+        cudaError_t dump_err = cudaMemcpyAsync(
+            self->h_preproc_dump,
+            tensor_meta->raw_tensor_buffer,
+            self->PREPROC_ELM * sizeof(float),
+            cudaMemcpyDeviceToHost,
+            self->cuda_stream);
+        if (dump_err == cudaSuccess) {
+            cudaStreamSynchronize(self->cuda_stream);
+            int dump_frame = frame_meta ? static_cast<int>(frame_meta->frame_num) : -1;
+            std::string path = self->preproc_dump_dir + "/preproc_" +
+                std::to_string(dump_frame) + ".bin";
+            FILE* fp = std::fopen(path.c_str(), "wb");
+            if (fp) {
+                std::fwrite(self->h_preproc_dump, sizeof(float), self->PREPROC_ELM, fp);
+                std::fclose(fp);
+            }
+            write_preproc_sidecar(btrans, frame_meta, tensor_meta,
+                                  self->preproc_dump_dir, dump_frame);
+        }
+    }
+
+    const float* d_loc = nullptr;
+    const float* d_conf = nullptr;
+    const float* d_landms = nullptr;
+    int num_anchors = 0;
+    if (!self->engine->infer(tensor_meta->raw_tensor_buffer, 1,
+                             &d_loc, &d_conf, &d_landms, &num_anchors)) {
+        GST_ELEMENT_ERROR(self, STREAM, FAILED,
+            ("RetinaFace inference failed"), (NULL));
         return GST_FLOW_ERROR;
     }
 

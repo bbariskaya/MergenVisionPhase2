@@ -89,6 +89,18 @@ target_link_libraries(render_annotated_video
     nvds_infercustomparser
 )
 
+add_executable(sprint04_feasibility_probe
+    tools/sprint04_feasibility_probe.cpp
+)
+target_link_libraries(sprint04_feasibility_probe
+    ${GSTREAMER_LIBRARIES}
+    CUDA::cudart
+    nvds_meta
+    nvdsgst_meta
+    nvds_inferutils
+    nvds_utils
+)
+
 add_executable(test_nms
     tests/test_nms.cu
 )

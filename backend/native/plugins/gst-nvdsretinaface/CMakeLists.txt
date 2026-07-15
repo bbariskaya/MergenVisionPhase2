@@ -44,5 +44,7 @@ target_link_libraries(gstnvdsretinaface
 )
 set_target_properties(gstnvdsretinaface PROPERTIES
     POSITION_INDEPENDENT_CODE ON
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+    # Keep our plugin in a dedicated directory so the whole build tree is not
+    # added to GST_PLUGIN_PATH.
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/gst-plugins
 )

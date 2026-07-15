@@ -6,6 +6,7 @@
 #include "gstnvdsmeta.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <cinttypes>
 #include <cstring>
 #include <string>
@@ -318,10 +319,14 @@ int main(int argc, char* argv[]) {
     if (g_access(engine_path.c_str(), F_OK) != 0) {
         engine_path = "backend/artifacts/engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine";
     }
+    float conf_threshold = 0.5f;
+    if (const char* diag_conf = std::getenv("MV_DIAG_CONF_THRESHOLD")) {
+        conf_threshold = static_cast<float>(std::atof(diag_conf));
+    }
     g_object_set(G_OBJECT(retinaface),
         "engine-file", engine_path.c_str(),
         "gpu-id", ctx.gpu_id,
-        "conf-threshold", 0.5f,
+        "conf-threshold", conf_threshold,
         "nms-threshold", 0.4f,
         NULL);
 

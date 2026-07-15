@@ -1,80 +1,83 @@
-# MergenVision Phase 2 — Sprint 03
+# MergenVision Phase 2 — Sprint 04
+
+## Sprint 03 prerequisite status: PASS/COMPLETED
+
+- `make phase2-foundation-acceptance` passed (exit 0, rerun log at `backend/out/sprint03_foundation_rerun.log`).
+- `git status --short` reviewed; all Sprint 03 changes are preserved.
+- No unresolved Sprint 03 blocker remains.
+
+See `docs/implementation/review_packages/SPRINT-003-CODE-REVIEW-PACKAGE.md` for the final Sprint 03 evidence package.
+
+---
 
 ## Objective
 
-Repair and harden the Sprint 01 detector foundation inside the Sprint 02 monorepo layout. Make the repository reproducible on a fresh clone, make the Python → Docker → native DeepStream chain deterministic and correct, and fix CUDA/plugin/subprocess lifecycle issues before any tracker/recognition work.
+Implement true temporal batched RetinaFace inference and a native GPU annotated-video pipeline.
+
+Primary user outcome: process a local MP4 significantly faster than real time with:
+
+```text
+NVDEC → nvstreammux temporal batching → nvdspreprocess → one TensorRT enqueue per actual batch
+→ batched CUDA decode/NMS/landmark postprocess → per-frame ordered metadata
+→ optional nvdsosd + NVENC + qtmux → playable annotated MP4
+```
+
+This is a detector batching + native rendering sprint. Tracker, recognition, identity names and canonical reconciliation are NOT in scope.
 
 ## Out of scope
 
-- NvDCF/ByteTrack tracker correctness fix (tracker may stay disabled or pass-through only).
-- ArcFace/GlintR100 recognition and CUDA face alignment.
-- Gallery enrollment/search and canonical reconciliation.
-- Annotated video rendering.
-- FastAPI endpoints, PostgreSQL, MinIO, Qdrant, SSE/WebSocket.
+- NvDCF/ByteTrack tracker correctness fix (tracker stays `off` for the batched/render path; the old batch-1 tracker-capable path is preserved but not exercised by new Sprint 04 acceptance).
+- ArcFace/GlintR100 recognition and five-point CUDA alignment.
+- Gallery enrollment, search, canonical reconciliation.
+- FastAPI endpoints, PostgreSQL, MinIO, Qdrant.
 - Multi-GPU scheduling beyond host GPU selection.
-- Model download, engine rebuild, Git history rewrite.
-- Parallel GPU NMS redesign; correctness and determinism only.
+- Livestream/RTSP/HLS, audio preservation.
+- CPU/OpenCV/NumPy production rendering or inference fallback.
 
 ## Deliverables
 
-1. **Canonical artifact layout** under `backend/artifacts/` with all stale root paths removed.
-2. **`make artifacts-check`** — mandatory non-zero exit when required artifacts are missing.
-3. **Artifact and stale-path regression tests**.
-4. **Native worker/plugin reproducibility**:
-   - plugin directory isolated (`backend/native/build/gst-plugins/`),
-   - no undefined symbols in native `.so` files,
-   - lifecycle tests for create/start/EOS/stop/finalize.
-5. **Python control-plane boundary fixes**:
-   - `SubprocessNativeWorkerAdapter`/`NativeDetectorClient` GPU assignment consistent,
-   - domain constructors free of filesystem side effects,
-   - subprocess timeout/cancellation cleanup with `-W error` clean.
-   - stricter worker result protocol (exit code vs summary).
-6. **CUDA correctness**:
-   - async D2H ordering bug fixed,
-   - deterministic argsort with anchor-id tie-break,
-   - engine tensor contract validation at init.
-7. **Hot-path boundary**:
-   - JSONL write moved out of tracker pad-probe to a writer queue/thread,
-   - no full-frame D2H, no bulk detector-output D2H.
-8. **Make targets**:
-   - `artifacts-check`, `backend-unit-strict`, `backend-native-build`, `backend-native-linkcheck`, `backend-native-unit`, `backend-detector-parity`, `backend-detector-determinism`, `backend-hotpath`, `backend-cli-smoke`, `backend-video-smoke`, `frontend-test`, `frontend-build`, `phase2-sprint-01-acceptance`, `sprint-02-acceptance`, `phase2-foundation-acceptance`.
-9. **Review package**: `docs/implementation/review_packages/SPRINT-003-CODE-REVIEW-PACKAGE.md`.
+1. Dynamic engine contract validation (tensor names, shapes, FP32 input, optimization profile supports 1/4/8/16).
+2. `make phase2-sprint-04-feasibility` proving single-source temporal batches > 1 and partial-EOS flushing on DeepStream 9.0.
+3. Batched `RetinaFacePostproc` and plugin transform that performs one TensorRT enqueue per actual batch.
+4. Frame/tensor mapping using `NvDsFrameMeta.batch_id` with validation and synthetic tests.
+5. Worker architecture split: `options`, `detector_pipeline`, `batch_contract`, `metadata_writer`, `annotated_video_sink`.
+6. Optional GPU-native annotated MP4 branch (`--annotated-output`) using `nvdsosd` + `nvv4l2h264enc` + `qtmux`.
+7. Updated Python `NativeDetectorClient` with batch/render options and validation tests.
+8. Immutable batch-1 baseline capture under `backend/out/sprint-04/baseline_batch1/`.
+9. Sprint 04 make targets:
+   - `phase2-sprint-04-feasibility`
+   - `phase2-sprint-04-build`
+   - `phase2-sprint-04-unit`
+   - `phase2-sprint-04-eos`
+   - `phase2-sprint-04-batch-parity`
+   - `phase2-sprint-04-determinism`
+   - `phase2-sprint-04-render`
+   - `phase2-sprint-04-hotpath`
+   - `phase2-sprint-04-benchmark`
+   - `phase2-sprint-04-acceptance`
+10. Final review package: `docs/implementation/review_packages/SPRINT-004-CODE-REVIEW-PACKAGE.md`.
 
 ## Acceptance
 
-1. `make artifacts-check` passes with all required artifacts present and SHA-256 verified.
-2. `make backend-unit-strict` passes with `-W error`.
-3. `make backend-native-build` and `make backend-native-linkcheck` pass (no undefined symbols, `gst-inspect-1.0 nvdsretinaface` succeeds).
-4. `make backend-native-unit` passes.
-5. `make backend-detector-parity` matches CPU oracle within tolerance on all processed frames.
-6. `make backend-detector-determinism` produces identical normalized output for 20 runs.
-7. `make backend-hotpath` proves no full-frame/detector-output D2H and no per-frame cudaMalloc/cudaFree.
-8. `make backend-cli-smoke` and `make backend-video-smoke` pass with expected frame/detections counts.
-9. `make frontend-test` and `make frontend-build` pass (real build).
-10. `make phase2-foundation-acceptance` aggregated command passes end to end.
-11. Stale root paths are gone from production/config/test/docs (verified by `backend/tests/integration/test_stale_paths.py`).
-12. `git diff --check` passes; no video/model/engine in Git; no raw customer data logged.
-13. No git commit/push.
+1. Sprint 03 foundation remains green through the entire Sprint 04 work.
+2. Feasibility gate proves actual temporal batching with correct `batch_id` mapping and EOS partial flushing.
+3. True batch inference: `enqueue_count < processed_frame_count` for `batch-size > 1`.
+4. Batch 4 works; batch 8 and 16 each pass or are honestly rejected with evidence.
+5. Batch-1 vs selected-batch semantic parity passes under frozen gates.
+6. EOS behavior verified for frame counts 1, 3, 4, 5, 15, 16, 17, 50.
+7. No `nvtracker` is instantiated in the batch/render pipeline.
+8. Annotated MP4 is playable, has H.264 stream, matching duration, and no fake tracker IDs or names.
+9. Hot-path contract passes (no full-frame D2H, no full detector tensor D2H, no per-frame cudaMalloc/free, no CPU postprocess).
+10. Benchmark report contains real measurements and selects one runtime batch size from data.
+11. `git diff --check` passes; no video/model/engine committed.
+12. No git commit/push.
+
+## Chosen approach
+
+- **Integrated render (A):** the worker optionally adds `nvdsosd → nvv4l2h264enc → qtmux → filesink` to the same pipeline so metadata and annotated MP4 are produced in one pass.
+- Old batch-1 tracker-capable code path remains but is not used for Sprint 04 acceptance.
+- `nvdspreprocess` `network-input-shape` will be generated per configured max batch at runtime; TensorRT will run with the actual batch size via `setInputShape`.
 
 ## Status
 
-COMPLETED
-
-### Completed acceptance gates
-
-- [x] `make artifacts-check` passes with all required artifacts present and SHA-256 verified.
-- [x] `make backend-unit-strict` passes with `-W error`.
-- [x] `make backend-cli-smoke` passes with expected frame/detections counts.
-- [x] `make frontend-test` passes.
-- [x] `make frontend-build` passes.
-- [x] `make backend-native-build`, `backend-native-linkcheck`, `backend-native-unit` pass.
-- [x] `make backend-detector-parity` and `make backend-detector-determinism` pass.
-- [x] `make backend-hotpath` passes (Nsight Systems D2H contract verified).
-- [x] `make backend-video-smoke` passes (Friends.mp4, 6665 frames, 8977 detections).
-- [x] `make phase2-foundation-acceptance` aggregated command passes.
-- [x] Stale root paths are gone from production/config/test/docs (verified by `backend/tests/integration/test_stale_paths.py`).
-- [x] `git diff --check` passes.
-
-### Remaining work
-
-- [ ] Review package `docs/implementation/review_packages/SPRINT-003-CODE-REVIEW-PACKAGE.md` (documentation-only follow-up).
+IN_PROGRESS — Build mode approved.

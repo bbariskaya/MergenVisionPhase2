@@ -53,6 +53,14 @@ private:
     float* d_out_landmarks_ = nullptr;
     float* d_out_scores_ = nullptr;
     int* d_out_count_ = nullptr;
+
+    // Pinned host buffers for async D2H. Reusing them means no per-frame
+    // cudaMalloc/free and exactly one stream synchronize.
+    float* h_out_boxes_ = nullptr;
+    float* h_out_landmarks_ = nullptr;
+    float* h_out_scores_ = nullptr;
+    int* h_out_count_ = nullptr;
+
     int num_priors_ = 0;
 };
 
