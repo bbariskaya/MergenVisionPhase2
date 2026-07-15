@@ -1,0 +1,2 @@
+/usr/bin/ar qc libretinaface_engine.a CMakeFiles/retinaface_engine.dir/retinaface_engine.cpp.o
+/usr/bin/ranlib libretinaface_engine.a

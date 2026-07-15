@@ -29,17 +29,21 @@ __global__ void l2_normalize_kernel(
         norm_sq += v * v;
     }
 
-    float norm = sqrtf(norm_sq + epsilon);
-    if (norm == 0.0f) {
-        atomicOr(status, 2);  // zero-norm flag
-        norm = 1.0f;
-    }
     if (!finite) {
-        atomicOr(status, 1);  // non-finite flag
+        atomicOr(status, 1);  // non-finite input flag
+        for (int i = 0; i < cols; ++i) y[i] = 0.0f;
+        return;
     }
 
+    if (norm_sq <= epsilon) {
+        atomicOr(status, 2);  // zero/near-zero norm flag
+        for (int i = 0; i < cols; ++i) y[i] = 0.0f;
+        return;
+    }
+
+    float inv_norm = rsqrtf(norm_sq);
     for (int i = 0; i < cols; ++i) {
-        y[i] = x[i] / norm;
+        y[i] = x[i] * inv_norm;
     }
 }
 
@@ -52,6 +56,12 @@ extern "C" int mergenvision_l2_normalize(
     int* d_status,
     cudaStream_t stream)
 {
+    if (rows <= 0 || cols <= 0) return 0;
+
+    // The wrapper owns status initialization so stale flags are never reused.
+    cudaError_t err = cudaMemsetAsync(d_status, 0, sizeof(int), stream);
+    if (err != cudaSuccess) return static_cast<int>(err);
+
     constexpr int block = 256;
     int grid = (rows + block - 1) / block;
     l2_normalize_kernel<<<grid, block, 0, stream>>>(

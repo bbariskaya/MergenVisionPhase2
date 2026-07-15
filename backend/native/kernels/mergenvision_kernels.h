@@ -84,6 +84,17 @@ int mergenvision_warp_align(
     float* d_dst,
     cudaStream_t stream);
 
+cudaError_t mergenvision_warp_align_rgba_pitch(
+    const uint8_t* const* d_surface_ptrs,
+    const int* d_surface_indices,
+    const int* d_pitches,
+    const int* d_widths,
+    const int* d_heights,
+    const float* d_matrices,
+    int n,
+    float* d_dst,
+    cudaStream_t stream);
+
 #ifdef __cplusplus
 }
 #endif

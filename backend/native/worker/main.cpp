@@ -4,6 +4,7 @@
 #include <cuda_runtime_api.h>
 
 #include "gstnvdsmeta.h"
+#include "mv_face_recognition_meta.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -41,6 +42,13 @@ struct WorkerOptions {
     std::string tracker_config;
     bool render = false;
     std::string annotated_output;
+
+    // Sprint 05 recognition settings.
+    bool mode_fast = false;
+    std::string recognizer_config = "/app/backend/native/configs/glintr100_preprocess_contract.json";
+    std::string gallery_file = "/app/backend/artifacts/gallery/gallery_centroids.json";
+    float threshold = 0.5f;
+    float margin = 0.2f;
 };
 
 struct AppContext {
@@ -78,6 +86,15 @@ static bool parse_worker_options(int argc, char** argv, WorkerOptions* opts) {
                 g_printerr("Invalid batch-size: must be > 0\n");
                 return false;
             }
+        } else if (arg == "--mode" && i + 1 < argc) {
+            std::string val = argv[++i];
+            if (val == "fast") {
+                opts->mode_fast = true;
+                opts->tracker_enabled = false;
+            } else {
+                g_printerr("Unknown mode: %s (expected 'fast')\n", val.c_str());
+                return false;
+            }
         } else if (arg == "--tracker" && i + 1 < argc) {
             std::string val = argv[++i];
             if (val == "off") {
@@ -91,6 +108,14 @@ static bool parse_worker_options(int argc, char** argv, WorkerOptions* opts) {
             opts->render = true;
         } else if (arg == "--render") {
             opts->render = true;
+        } else if (arg == "--gallery" && i + 1 < argc) {
+            opts->gallery_file = argv[++i];
+        } else if (arg == "--threshold" && i + 1 < argc) {
+            opts->threshold = static_cast<float>(std::atof(argv[++i]));
+        } else if (arg == "--margin" && i + 1 < argc) {
+            opts->margin = static_cast<float>(std::atof(argv[++i]));
+        } else if (arg == "--recognizer-config" && i + 1 < argc) {
+            opts->recognizer_config = argv[++i];
         } else {
             g_printerr("Unknown option: %s\n", arg.c_str());
             return false;
@@ -252,9 +277,31 @@ struct FrameDetections {
     double pts_ms;
     int width;
     int height;
-    struct Det { int det_id; uint64_t track_id; float x1, y1, x2, y2, score; float landmarks[10]; };
+    struct Det {
+        int det_id;
+        uint64_t track_id;
+        float x1, y1, x2, y2, score;
+        float landmarks[10];
+        std::string identity_id;
+        std::string identity_name;
+        std::string rec_status;
+        float top1 = 0.0f;
+        float top2 = 0.0f;
+        float margin = 0.0f;
+        float embedding_quality = 0.0f;
+    };
     std::vector<Det> dets;
 };
+
+static const MvFaceRecognitionMeta* find_recognition_meta(NvDsObjectMeta* obj_meta) {
+    for (NvDsMetaList* l = obj_meta->obj_user_meta_list; l != NULL; l = l->next) {
+        NvDsUserMeta* um = (NvDsUserMeta*)l->data;
+        if (um->base_meta.meta_type == mv_face_recognition_meta_type() && um->user_meta_data) {
+            return reinterpret_cast<const MvFaceRecognitionMeta*>(um->user_meta_data);
+        }
+    }
+    return nullptr;
+}
 
 static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeInfo* info, gpointer u_data) {
     (void)pad;
@@ -295,6 +342,7 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
             float score = obj_meta->confidence;
 
             const FaceLandmarkMeta* lm = find_landmark_meta(obj_meta);
+            const MvFaceRecognitionMeta* rec = find_recognition_meta(obj_meta);
             FrameDetections::Det det;
             det.det_id = det_id++;
             det.track_id = obj_meta->object_id;
@@ -303,6 +351,17 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
             std::memset(det.landmarks, 0, sizeof(det.landmarks));
             if (lm) {
                 std::memcpy(det.landmarks, lm->landmarks, sizeof(det.landmarks));
+            }
+            if (rec) {
+                det.identity_id = rec->identity_id;
+                det.identity_name = rec->identity_name;
+                det.rec_status = rec->status;
+                det.top1 = rec->top1_similarity;
+                det.top2 = rec->top2_similarity;
+                det.margin = rec->margin;
+                det.embedding_quality = rec->embedding_quality;
+            } else {
+                det.rec_status = "pending";
             }
 
             bool sane = score >= 0.0f && score <= 1.0f
@@ -326,6 +385,22 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
     }
     nvds_release_meta_lock(batch_meta);
 
+    auto json_escape = [](FILE* f, const std::string& s) {
+        fputc('"', f);
+        for (char c : s) {
+            switch (c) {
+                case '"': fprintf(f, "\\\""); break;
+                case '\\': fprintf(f, "\\\\"); break;
+                case '\b': fprintf(f, "\\b"); break;
+                case '\n': fprintf(f, "\\n"); break;
+                case '\r': fprintf(f, "\\r"); break;
+                case '\t': fprintf(f, "\\t"); break;
+                default: fputc(c, f); break;
+            }
+        }
+        fputc('"', f);
+    };
+
     // Serialize and accumulate tracks outside the metadata lock.
     for (const auto& fd : frame_batch) {
         fprintf(ctx->detections_f, "{\"frame\":%" PRId64 ",\"pts_ms\":%.3f,\"width\":%d,\"height\":%d,\"detections\":[",
@@ -346,10 +421,20 @@ static GstPadProbeReturn detector_src_pad_buffer_probe(GstPad* pad, GstPadProbeI
                 if (k) fprintf(ctx->detections_f, ",");
                 fprintf(ctx->detections_f, "%.3f", d.landmarks[k]);
             }
-            fprintf(ctx->detections_f, "]}");
+            fprintf(ctx->detections_f, "],");
+            fprintf(ctx->detections_f, "\"identity_id\":");
+            json_escape(ctx->detections_f, d.identity_id.empty() ? "" : d.identity_id);
+            fprintf(ctx->detections_f, ",");
+            fprintf(ctx->detections_f, "\"identity_name\":");
+            json_escape(ctx->detections_f, d.identity_name.empty() ? "" : d.identity_name);
+            fprintf(ctx->detections_f, ",");
+            fprintf(ctx->detections_f, "\"status\":");
+            json_escape(ctx->detections_f, d.rec_status);
+            fprintf(ctx->detections_f, ",\"top1\":%.4f,\"top2\":%.4f,\"margin\":%.4f,\"embedding_quality\":%.4f}",
+                d.top1, d.top2, d.margin, d.embedding_quality);
 
             ctx->total_detections++;
-            if (ctx->options.tracker_enabled) {
+            if (ctx->options.tracker_enabled && d.track_id != UNTRACKED_OBJECT_ID) {
                 TrackEntry e;
                 e.frame_num = fd.frame_num;
                 e.pts_ms = fd.pts_ms;
@@ -379,13 +464,41 @@ static GstPadProbeReturn osd_sink_pad_buffer_probe(GstPad* pad, GstPadProbeInfo*
             NvDsObjectMeta* obj_meta = (NvDsObjectMeta*)l_obj->data;
             if (obj_meta->class_id != 0) continue;
 
+            const MvFaceRecognitionMeta* rec = find_recognition_meta(obj_meta);
+            const char* label = "unknown";
+            float sim = 0.0f;
+            float det_score = obj_meta->confidence;
+            float r = 0.0f, g = 1.0f, b = 0.0f;  // default green
+            if (rec) {
+                std::string rec_id(rec->identity_id);
+                std::string rec_name(rec->identity_name);
+                std::string rec_status(rec->status);
+                if (rec_status == "known") {
+                    label = rec_name.empty() ? rec_id.c_str() : rec_name.c_str();
+                    sim = rec->top1_similarity;
+                    g = 1.0f; b = 0.0f; r = 0.0f;
+                } else if (rec_status == "invalid") {
+                    label = "invalid";
+                    r = 1.0f; g = 0.0f; b = 0.0f;
+                } else {
+                    label = "unknown";
+                    sim = rec->top1_similarity;
+                    r = 1.0f; g = 1.0f; b = 0.0f;  // yellow
+                }
+            }
+
             obj_meta->rect_params.border_width = 2;
-            obj_meta->rect_params.border_color.red = 0.0f;
-            obj_meta->rect_params.border_color.green = 1.0f;
-            obj_meta->rect_params.border_color.blue = 0.0f;
+            obj_meta->rect_params.border_color.red = r;
+            obj_meta->rect_params.border_color.green = g;
+            obj_meta->rect_params.border_color.blue = b;
             obj_meta->rect_params.border_color.alpha = 1.0f;
 
-            gchar* text = g_strdup_printf("det:%d %.2f", det_id, obj_meta->confidence);
+            gchar* text;
+            if (rec && std::string(rec->status) == "known") {
+                text = g_strdup_printf("%s | sim:%.2f | det:%.2f", label, sim, det_score);
+            } else {
+                text = g_strdup_printf("%s | sim:%.2f | det:%.2f", label, sim, det_score);
+            }
             obj_meta->text_params.display_text = text;
             obj_meta->text_params.x_offset = (unsigned int)std::max(0.0f, obj_meta->rect_params.left);
             obj_meta->text_params.y_offset = (unsigned int)std::max(0.0f, obj_meta->rect_params.top - 14.0f);
@@ -462,6 +575,23 @@ static gboolean ensure_nvdsretinaface_plugin() {
     return gst_element_factory_find("nvdsretinaface") != nullptr;
 }
 
+static gboolean ensure_mvfacerecognizer_plugin() {
+    if (gst_element_factory_find("mvfacerecognizer")) return TRUE;
+
+    const char* build_dir = "/app/backend/native/build";
+    std::string plugin_path = std::string(build_dir) + "/gst-plugins/libgstmvfacerecognizer.so";
+    if (g_access(plugin_path.c_str(), F_OK) != 0) {
+        plugin_path = "backend/native/build/gst-plugins/libgstmvfacerecognizer.so";
+    }
+    GstPlugin* plugin = gst_plugin_load_file(plugin_path.c_str(), nullptr);
+    if (!plugin) {
+        g_printerr("Failed to load libgstmvfacerecognizer.so from %s\n", plugin_path.c_str());
+        return FALSE;
+    }
+    gst_object_unref(plugin);
+    return gst_element_factory_find("mvfacerecognizer") != nullptr;
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 4) {
         g_printerr("Usage: %s <input.mp4> <output_dir> <gpu_id> [tracker_config.yml]\n", argv[0]);
@@ -525,6 +655,10 @@ int main(int argc, char* argv[]) {
         g_printerr("nvdsretinaface element not available\n");
         return -1;
     }
+    if (!ensure_mvfacerecognizer_plugin()) {
+        g_printerr("mvfacerecognizer element not available\n");
+        return -1;
+    }
     ensure_face_landmark_meta_type();
 
     GMainLoop* loop = g_main_loop_new(NULL, FALSE);
@@ -547,8 +681,17 @@ int main(int argc, char* argv[]) {
     GstElement* filesink = nullptr;
     GstElement* fakesink = nullptr;
     GstElement* demux = nullptr;
-    GstElement* queue = nullptr;
-    GstElement* post_det_queue = nullptr;
+    GstElement* queue = nullptr;             // post-demux queue when rendering
+    GstElement* post_rec_queue = nullptr;    // post-recognition queue
+    GstElement* post_det_queue = nullptr;    // queue after detector/tracker before RGBA conversion
+    GstElement* videoconvert = nullptr;      // recognizer RGBA converter
+    GstElement* enc_videoconvert = nullptr;  // encoder color-space converter
+    GstElement* recognizer = nullptr;
+
+    videoconvert = gst_element_factory_make("nvvideoconvert", "rec-videoconvert");
+    recognizer = gst_element_factory_make("mvfacerecognizer", "face-recognizer");
+    post_det_queue = gst_element_factory_make("queue", "post-detector-queue");
+    post_rec_queue = gst_element_factory_make("queue", "post-recognition-queue");
 
     if (opts.render) {
         osd = gst_element_factory_make("nvdsosd", "osd");
@@ -558,22 +701,16 @@ int main(int argc, char* argv[]) {
         filesink = gst_element_factory_make("filesink", "file-sink");
         demux = gst_element_factory_make("nvstreamdemux", "render-demux");
         queue = gst_element_factory_make("queue", "post-demux-queue");
-        post_det_queue = gst_element_factory_make("queue", "post-detector-queue");
+        enc_videoconvert = gst_element_factory_make("nvvideoconvert", "enc-videoconvert");
     } else {
         fakesink = gst_element_factory_make("fakesink", "fake-sink");
-        if (!opts.tracker_enabled) {
-            demux = gst_element_factory_make("nvstreamdemux", "demux");
-        }
-        queue = gst_element_factory_make("queue", "post-detector-queue");
     }
 
     if (!pipeline || !source || !qtdemux || !h264parse || !decoder || !streammux ||
-        !preprocess || !retinaface ||
+        !preprocess || !retinaface || !videoconvert || !recognizer || !post_det_queue || !post_rec_queue ||
         (opts.tracker_enabled && !tracker) ||
-        (opts.render && (!osd || !encoder || !encparse || !muxer || !filesink || !demux || !queue || !post_det_queue)) ||
-        (!opts.render && !fakesink) ||
-        (!opts.render && !queue) ||
-        (!opts.render && !opts.tracker_enabled && !demux)) {
+        (opts.render && (!osd || !encoder || !encparse || !muxer || !filesink || !demux || !queue || !enc_videoconvert)) ||
+        (!opts.render && !fakesink)) {
         g_printerr("Failed to create one or more elements\n");
         return -1;
     }
@@ -592,6 +729,9 @@ int main(int argc, char* argv[]) {
             "bitrate", 4000000,
             "preset-id", 2,
             "insert-sps-pps", TRUE,
+            NULL);
+        g_object_set(G_OBJECT(enc_videoconvert),
+            "gpu-id", opts.gpu_id,
             NULL);
     } else {
         g_object_set(G_OBJECT(fakesink), "sync", 0, "async", 0, "qos", 0, NULL);
@@ -659,7 +799,25 @@ int main(int argc, char* argv[]) {
         "nms-threshold", 0.4f,
         NULL);
 
-    GstElement* probe_element = retinaface;
+    g_object_set(G_OBJECT(recognizer),
+        "engine-file", opts.recognizer_config.c_str(),
+        "gallery-file", opts.gallery_file.c_str(),
+        "threshold", opts.threshold,
+        "margin", opts.margin,
+        "gpu-id", opts.gpu_id,
+        NULL);
+
+    // Configure bounded queues around the recognizer.
+    configure_queue(post_det_queue, std::max(16, opts.batch_size * 2));
+    configure_queue(post_rec_queue, std::max(16, opts.batch_size * 2));
+    if (queue) configure_queue(queue, std::max(16, opts.batch_size * 2));
+
+    GstCaps* rgba_caps = gst_caps_from_string("video/x-raw(memory:NVMM),format=RGBA");
+    if (!rgba_caps) {
+        g_printerr("Failed to create RGBA caps\n");
+        return -1;
+    }
+
     if (opts.tracker_enabled) {
         g_object_set(G_OBJECT(tracker),
             "ll-lib-file", "/opt/nvidia/deepstream/deepstream-9.0/lib/libnvds_nvmultiobjecttracker.so",
@@ -670,51 +828,56 @@ int main(int argc, char* argv[]) {
             "gpu-id", opts.gpu_id,
             NULL);
         g_print("tracker-config=%s\n", opts.tracker_config.c_str());
-        if (opts.render) {
-            gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, tracker, post_det_queue, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, tracker, post_det_queue, demux, NULL)) {
-                g_printerr("Failed to link streammux->...->demux\n");
-                return -1;
-            }
-        } else {
-            gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, tracker, queue, fakesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, tracker, queue, fakesink, NULL)) {
-                g_printerr("Failed to link streammux->preprocess->retinaface->tracker->queue->fakesink\n");
-                return -1;
-            }
+    }
+
+    if (opts.render) {
+        gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
+            preprocess, retinaface, post_det_queue, videoconvert, recognizer, post_rec_queue,
+            demux, queue, osd, enc_videoconvert, encoder, encparse, muxer, filesink, NULL);
+        if (opts.tracker_enabled) {
+            gst_bin_add(GST_BIN(pipeline), tracker);
         }
-        probe_element = tracker;
     } else {
-        if (opts.render) {
-            gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, post_det_queue, demux, queue, osd, encoder, encparse, muxer, filesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, post_det_queue, demux, NULL)) {
-                g_printerr("Failed to link streammux->...->demux\n");
-                return -1;
-            }
-        } else {
-            gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
-                preprocess, retinaface, demux, queue, fakesink, NULL);
-            if (!gst_element_link_many(streammux, preprocess, retinaface, demux, NULL)) {
-                g_printerr("Failed to link streammux->preprocess->retinaface->demux\n");
-                return -1;
-            }
-            GstPad* demux_src = gst_element_request_pad_simple(demux, "src_0");
-            GstPad* queue_sink = gst_element_get_static_pad(queue, "sink");
-            if (gst_pad_link(demux_src, queue_sink) != GST_PAD_LINK_OK) {
-                g_printerr("Failed to link demux->queue\n");
-                gst_object_unref(demux_src);
-                gst_object_unref(queue_sink);
-                return -1;
-            }
-            gst_object_unref(demux_src);
-            gst_object_unref(queue_sink);
-            if (!gst_element_link_many(queue, fakesink, NULL)) {
-                g_printerr("Failed to link queue->fakesink\n");
-                return -1;
-            }
+        gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux,
+            preprocess, retinaface, post_det_queue, videoconvert, recognizer, post_rec_queue,
+            fakesink, NULL);
+        if (opts.tracker_enabled) {
+            gst_bin_add(GST_BIN(pipeline), tracker);
+        }
+    }
+
+    if (opts.tracker_enabled) {
+        if (!gst_element_link_many(streammux, preprocess, retinaface, tracker, post_det_queue,
+                                   videoconvert, NULL)) {
+            g_printerr("Failed to link streammux->...->videoconvert\n");
+            gst_caps_unref(rgba_caps);
+            return -1;
+        }
+    } else {
+        if (!gst_element_link_many(streammux, preprocess, retinaface, post_det_queue,
+                                   videoconvert, NULL)) {
+            g_printerr("Failed to link streammux->...->videoconvert\n");
+            gst_caps_unref(rgba_caps);
+            return -1;
+        }
+    }
+
+    if (!gst_element_link_filtered(videoconvert, recognizer, rgba_caps)) {
+        g_printerr("Failed to link videoconvert->recognizer with RGBA caps\n");
+        gst_caps_unref(rgba_caps);
+        return -1;
+    }
+    gst_caps_unref(rgba_caps);
+
+    if (opts.render) {
+        if (!gst_element_link_many(recognizer, post_rec_queue, demux, NULL)) {
+            g_printerr("Failed to link recognizer->post_rec_queue->demux\n");
+            return -1;
+        }
+    } else {
+        if (!gst_element_link_many(recognizer, post_rec_queue, fakesink, NULL)) {
+            g_printerr("Failed to link recognizer->post_rec_queue->fakesink\n");
+            return -1;
         }
     }
 
@@ -729,13 +892,25 @@ int main(int argc, char* argv[]) {
         }
         gst_object_unref(demux_src);
         gst_object_unref(queue_sink);
-        if (!gst_element_link_many(queue, osd, encoder, encparse, muxer, filesink, NULL)) {
-            g_printerr("Failed to link queue->osd->encoder->muxer->filesink\n");
+        GstCaps* nv12_caps = gst_caps_from_string("video/x-raw(memory:NVMM),format=NV12");
+        if (!nv12_caps) {
+            g_printerr("Failed to create NV12 caps\n");
+            return -1;
+        }
+        if (!gst_element_link_many(queue, osd, enc_videoconvert, NULL) ||
+            !gst_element_link_filtered(enc_videoconvert, encoder, nv12_caps)) {
+            g_printerr("Failed to link queue->osd->enc-convert->encoder\n");
+            gst_caps_unref(nv12_caps);
+            return -1;
+        }
+        gst_caps_unref(nv12_caps);
+        if (!gst_element_link_many(encoder, encparse, muxer, filesink, NULL)) {
+            g_printerr("Failed to link encoder->muxer->filesink\n");
             return -1;
         }
     }
 
-    GstPad* probe_pad = gst_element_get_static_pad(probe_element, "src");
+    GstPad* probe_pad = gst_element_get_static_pad(recognizer, "src");
     gst_pad_add_probe(probe_pad, GST_PAD_PROBE_TYPE_BUFFER, detector_src_pad_buffer_probe, &ctx, NULL);
     gst_object_unref(probe_pad);
 

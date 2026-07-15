@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmergenvision_tracking.a CMakeFiles/mergenvision_tracking.dir/continuous_iou.cpp.o CMakeFiles/mergenvision_tracking.dir/kalman_filter.cpp.o CMakeFiles/mergenvision_tracking.dir/linear_assignment.cpp.o CMakeFiles/mergenvision_tracking.dir/byte_tracker.cpp.o CMakeFiles/mergenvision_tracking.dir/multi_source_tracker.cpp.o CMakeFiles/mergenvision_tracking.dir/evidence_writer.cpp.o
+/usr/bin/ranlib libmergenvision_tracking.a

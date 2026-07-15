@@ -1,11 +1,18 @@
 # MergenVision Phase 2 — Sprint 05
 
+**Binding implementation contract overrides this draft:**
+`docs/implementation/plans/SPRINT-005-IMPLEMENTATION-CONTRACT.md`
+
+---
+
 ## Sprint 04 closure status
 
 - Detector batching + native render: **PASS**.
 - `make phase2-sprint-04-acceptance` exit 0.
 - Review package: `docs/implementation/review_packages/SPRINT-004-CODE-REVIEW-PACKAGE.md`.
 - NvDCF raw tracker ID assignment: **KNOWN_BROKEN / DEFERRED** (all detections receive `UNTRACKED_OBJECT_ID`).
+
+Sprint 05 starts only after the above closure evidence is final (split verdict, buffer-pool default kept at `max(16, batch*2)`, diagnostic report recorded, aggregation bug fixed with unit test).
 
 ---
 
@@ -67,15 +74,19 @@ Primary user outcome: a single CLI command produces a playable annotated MP4 whe
 
 ## Acceptance
 
-1. `friendsshort_recognized_annotated.mp4` and `Friends_recognized_annotated.mp4` are playable and show real gallery names or honest `unknown`.
-2. `recognized_detections.jsonl` and `run_manifest.json` are produced with the fields listed above.
-3. Alignment/contact-sheet artifact is generated and inspected.
+1. `friendsshort_recognized_annotated.mp4` and `Friends_recognized_annotated.mp4` are playable; faces show real gallery names or honest `unknown`.
+2. `recognized_detections.jsonl` and `run_manifest.json` are produced per the JSONL/manifest contract in the binding plan.
+3. Alignment/contact-sheet artifact is generated and inspected; alignment parity thresholds were frozen before evaluation.
 4. Single native GPU pass; no Python/OpenCV production decode/alignment/inference.
-5. No full decoded frame D2H; only compact metadata/normalized embeddings cross to CPU.
-6. Output frame count and duration match the input video.
-7. Fast mode uses detector batch-size=8, tracker off, render on, and is faster than realtime (target ≥100 FPS effective).
-8. Tracked validation mode produces real raw tracker IDs; any remaining `UNTRACKED_OBJECT_ID` causes FAIL.
-9. `make phase2-sprint-05-acceptance` exits 0.
+5. No full decoded frame D2H; only compact embeddings/metadata cross to CPU (allowed D2H bytes logged in `run_manifest.json`).
+6. Output frame count and duration match the input video; PTS monotonic; clean EOS.
+7. Fast mode uses detector batch-size=8, tracker off, render on. Any fixed FPS target is measurement-only, not a pass/fail gate.
+8. Tracker-on raw-ID correctness is **non-blocking** for Sprint 05; `phase2-sprint-05-acceptance` does not include the tracker diagnostic. The diagnostic target reports `PASS` or `KNOWN_BROKEN` separately.
+9. Recognition decisions must pass frozen semantic gates: at least one expected known identity on friendsshort, not all unknown, not all collapsed to one identity, top1/top2/margin rules, duplicate/wrong-SHA gallery rejection.
+10. Batch parity: batch=1 vs batch=8 produce the same detections, identity decisions, and similarity deltas within tolerance.
+11. Determinism: short fixture repeated ≥3 times yields identical semantic results (ordered by frame/PTS).
+12. Hot-path evidence shows GPU-resident decode, CUDA alignment, TRT GlintR100, CUDA L2 norm, no per-face synchronize, no per-buffer cudaMalloc/free.
+13. `make phase2-sprint-05-acceptance` exits 0 **and** the aggregate target invokes the full mandatory acceptance chain (not just a single exit-code check).
 
 ---
 
@@ -90,3 +101,5 @@ Primary user outcome: a single CLI command produces a playable annotated MP4 whe
 ## Status
 
 IN_PROGRESS — Sprint 05 implementation starting.
+
+Sprint 06 binding implementation contract has been staged at `docs/implementation/plans/SPRINT-006-IMPLEMENTATION-CONTRACT.md` and is frozen for activation only after Sprint 05 PASS.

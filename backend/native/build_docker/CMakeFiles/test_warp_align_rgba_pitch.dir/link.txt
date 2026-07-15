@@ -1,0 +1,1 @@
+/usr/bin/g++ @CMakeFiles/test_warp_align_rgba_pitch.dir/objects1.rsp -o test_warp_align_rgba_pitch @CMakeFiles/test_warp_align_rgba_pitch.dir/linkLibs.rsp -L"/usr/local/cuda/targets/x86_64-linux/lib/stubs" -L"/usr/local/cuda/targets/x86_64-linux/lib"

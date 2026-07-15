@@ -16,7 +16,7 @@ DOCKER_RUN := docker run --rm --gpus "device=$(GPU_DEVICE)" \
 	-v "$(REPO):/app" \
 	-w /app
 
-.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-frame-identity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance backend-batch-invariants backend-cli-tracker-reject backend-batch-parity backend-batch-determinism backend-render-parity backend-batch-benchmark phase2-sprint-04-acceptance
+.PHONY: artifacts-check backend-unit backend-unit-strict backend-native-build backend-native-linkcheck backend-native-unit backend-native-smoke backend-cli-smoke backend-detector-parity backend-detector-frame-identity backend-detector-engine-parity backend-detector-determinism backend-hotpath backend-video-smoke frontend-test frontend-build sprint-02-acceptance phase2-sprint-01-acceptance phase2-foundation-acceptance backend-batch-invariants backend-cli-tracker-reject backend-batch-parity backend-batch-determinism backend-render-parity backend-batch-benchmark phase2-sprint-04-acceptance phase2-sprint-06-native-build phase2-sprint-06-core-unit phase2-sprint-06-sanitizers phase2-sprint-06-plugin-integration phase2-sprint-06-reconciliation-unit phase2-sprint-06-acceptance
 
 artifacts-check:
 	@echo "=== Artifact manifest check ==="
@@ -136,3 +136,28 @@ phase2-sprint-04-acceptance: artifacts-check backend-unit-strict backend-native-
 	@echo "=== git diff --check ==="
 	git diff --check
 	@echo "Phase2 Sprint 04 acceptance PASSED"
+
+phase2-sprint-06-native-build: backend-native-build
+
+phase2-sprint-06-core-unit: backend-native-build
+	@echo "=== Sprint 06 core tracking unit tests ==="
+	$(DOCKER_RUN) --entrypoint $(NATIVE_BUILD)/tracking/test_tracking_core $(BUILD_CONTAINER)
+	$(DOCKER_RUN) --entrypoint $(NATIVE_BUILD)/tracking/test_evidence_writer $(BUILD_CONTAINER)
+
+phase2-sprint-06-sanitizers: backend-native-build
+	@echo "=== Sprint 06 core tracker ASan/UBSan ==="
+	$(DOCKER_RUN) --entrypoint $(NATIVE_BUILD)/tracking/test_tracking_core_asan $(BUILD_CONTAINER)
+
+phase2-sprint-06-plugin-integration: backend-native-build
+	@echo "=== Sprint 06 mvfacetracker plugin registration ==="
+	$(DOCKER_RUN) --entrypoint gst-inspect-1.0 $(BUILD_CONTAINER) mvfacetracker
+
+phase2-sprint-06-reconciliation-unit:
+	@echo "=== Sprint 06 Python reconciliation unit tests ==="
+	cd backend && python3 -m pytest tests/unit/tracking -q
+
+phase2-sprint-06-acceptance: backend-unit-strict phase2-sprint-06-native-build phase2-sprint-06-core-unit \
+    phase2-sprint-06-sanitizers phase2-sprint-06-plugin-integration phase2-sprint-06-reconciliation-unit
+	@echo "=== git diff --check ==="
+	git diff --check
+	@echo "Phase2 Sprint 06 acceptance PASSED"

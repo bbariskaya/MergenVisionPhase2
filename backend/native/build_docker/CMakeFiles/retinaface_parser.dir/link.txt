@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -O3 -DNDEBUG -shared -Wl,-soname,libretinaface_parser.so -o libretinaface_parser.so CMakeFiles/retinaface_parser.dir/parsers/retinaface_parser.cpp.o   -L/opt/nvidia/deepstream/deepstream-9.0/lib 

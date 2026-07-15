@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "model_name": "Glint360K-r100-IResNet100-ArcFace",
+  "model_source": "InsightFace model zoo / glint360k-r100.onnx",
+  "model_sha256": "4ab1d6435d639628a6f3e5008dd4f929edf4c4124b1a7169e1048f9fef534cdf",
+  "engine_sha256": "524bf691a6524a070b275bf70e5642abfa7c5e08d09538652d8160e424fdefa9",
+  "engine_path": "backend/artifacts/engines/glintr100.bs1.opt128.max256.fp16.trt1014.engine",
+  "input_name": "input.1",
+  "output_name": "1333",
+  "input_shape": [-1, 3, 112, 112],
+  "output_shape": [-1, 512],
+  "input_dtype": "float32",
+  "output_dtype": "float32",
+  "color_order": "RGB",
+  "normalization": {
+    "mode": "per_pixel",
+    "subtract": 127.5,
+    "divide": 127.5,
+    "description": "output = (pixel - 127.5) / 127.5"
+  },
+  "preprocess_pipeline": [
+    "decode detector output",
+    "extract original-resolution 5 landmarks",
+    "similarity-transform to canonical 112x112 template",
+    "bilinear sample with constant-zero border",
+    "RGB channel order",
+    "(x - 127.5) / 127.5 per-pixel normalization"
+  ],
+  "landmark_order": [
+    "left_eye",
+    "right_eye",
+    "nose",
+    "left_mouth",
+    "right_mouth"
+  ],
+  "canonical_template": [
+    [38.2946, 51.6963],
+    [73.5318, 51.5014],
+    [56.0252, 71.7366],
+    [41.5493, 92.3655],
+    [70.7299, 92.2041]
+  ],
+  "pixel_center_rule": "integer pixel centers at (x, y) with bilinear interpolation; dst pixel coordinate mapped through inverse affine and sampled at source location",
+  "border_mode": "constant_zero",
+  "output_l2_normalization": false,
+  "engine_profile": {
+    "min_batch": 1,
+    "opt_batch": 128,
+    "max_batch": 256,
+    "min_shape": [1, 3, 112, 112],
+    "opt_shape": [128, 3, 112, 112],
+    "max_shape": [256, 3, 112, 112]
+  },
+  "notes": [
+    "ONNX output binding is named 1333.",
+    "Engine emits raw 512-d embeddings; L2 normalization is applied outside the engine.",
+    "RGB vs BGR verified on a real gallery crop: BGR raw cosine to RGB is ~0.932, so RGB is correct.",
+    "Contract hashes verified against artifacts on disk at time of freeze."
+  ]
+}

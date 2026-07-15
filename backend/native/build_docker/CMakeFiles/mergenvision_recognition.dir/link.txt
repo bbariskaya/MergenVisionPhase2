@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmergenvision_recognition.a CMakeFiles/mergenvision_recognition.dir/recognition/glintr100_engine.cpp.o CMakeFiles/mergenvision_recognition.dir/recognition/gallery.cpp.o
+/usr/bin/ranlib libmergenvision_recognition.a
