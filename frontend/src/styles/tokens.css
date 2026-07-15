@@ -1,0 +1,71 @@
+:root {
+  /* Backgrounds */
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f0f2f5;
+  --color-surface-hover: #e8ebf0;
+  --color-overlay: rgba(17, 24, 39, 0.48);
+
+  /* Borders */
+  --color-border: #e1e4e8;
+  --color-border-strong: #cdd2d8;
+
+  /* Text */
+  --color-text: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #5f6b7a;
+  --color-text-on-primary: #ffffff;
+
+  /* Primary */
+  --color-primary: #1e5aa8;
+  --color-primary-hover: #174885;
+  --color-primary-subtle: #e8f0fa;
+
+  /* Status */
+  --color-success: #1a7f45;
+  --color-success-subtle: #e8f5ed;
+  --color-warning: #b35900;
+  --color-warning-subtle: #fdf3e5;
+  --color-danger: #c62828;
+  --color-danger-subtle: #fdecec;
+  --color-info: #4f6a8a;
+  --color-info-subtle: #eef2f7;
+
+  /* Timeline */
+  --color-known: #1e5aa8;
+  --color-anonymous: #6b7280;
+  --color-new-anonymous: #047857;
+  --color-unknown: #9ca3af;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --topbar-height: 56px;
+  --content-max-width: 1600px;
+}

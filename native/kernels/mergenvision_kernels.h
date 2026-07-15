@@ -32,9 +32,11 @@ int mergenvision_argsort_descending(
 
 int mergenvision_nms(
     const float* d_boxes,
+    const float* d_scores,
     const int* d_order,
     int n,
-    float threshold,
+    float iou_threshold,
+    float score_threshold,
     uint8_t* d_keep,
     cudaStream_t stream);
 
@@ -49,6 +51,7 @@ int mergenvision_scale_clip_compact_xy(
     float scale_y,
     int img_w,
     int img_h,
+    float score_threshold,
     float* d_out_boxes,
     float* d_out_landmarks,
     float* d_out_scores,

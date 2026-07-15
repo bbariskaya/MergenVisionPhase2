@@ -15,6 +15,7 @@ __global__ void scale_clip_compact_xy_kernel(
     float scale_y,
     int img_w,
     int img_h,
+    float score_threshold,
     float* __restrict__ out_boxes,        // [K, 4] in original image space
     float* __restrict__ out_landmarks,    // [K, 10]
     float* __restrict__ out_scores,       // [K]
@@ -26,12 +27,16 @@ __global__ void scale_clip_compact_xy_kernel(
     for (int i = 0; i < n; ++i) {
         if (!keep[i]) continue;
         int src = order[i];
+        float score = scores[src];
+        if (score <= score_threshold) break; // sorted descending; rest invalid
 
         const float* b = boxes + src * 4;
         float x1 = fminf(fmaxf(b[0] * scale_x, 0.0f), static_cast<float>(img_w));
         float y1 = fminf(fmaxf(b[1] * scale_y, 0.0f), static_cast<float>(img_h));
         float x2 = fminf(fmaxf(b[2] * scale_x, 0.0f), static_cast<float>(img_w));
         float y2 = fminf(fmaxf(b[3] * scale_y, 0.0f), static_cast<float>(img_h));
+        if (x2 <= x1 || y2 <= y1) continue;
+
         float* ob = out_boxes + k * 4;
         ob[0] = x1; ob[1] = y1; ob[2] = x2; ob[3] = y2;
 
@@ -44,7 +49,7 @@ __global__ void scale_clip_compact_xy_kernel(
             ol[j * 2 + 1] = ly;
         }
 
-        out_scores[k] = scores[src];
+        out_scores[k] = score;
         ++k;
     }
     *out_count = k;
@@ -61,6 +66,7 @@ extern "C" int mergenvision_scale_clip_compact_xy(
     float scale_y,
     int img_w,
     int img_h,
+    float score_threshold,
     float* d_out_boxes,
     float* d_out_landmarks,
     float* d_out_scores,
@@ -69,7 +75,7 @@ extern "C" int mergenvision_scale_clip_compact_xy(
 {
     scale_clip_compact_xy_kernel<<<1, 1, 0, stream>>>(
         d_boxes, d_landmarks, d_scores, d_order, d_keep, n,
-        scale_x, scale_y, img_w, img_h,
+        scale_x, scale_y, img_w, img_h, score_threshold,
         d_out_boxes, d_out_landmarks, d_out_scores, d_out_count);
     return cudaGetLastError();
 }

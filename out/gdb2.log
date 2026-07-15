@@ -1,0 +1,93 @@
+warning: Error disabling address space randomization: Operation not permitted
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgobject-2.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/usr/lib/x86_64-linux-gnu/libthread_db.so.1".
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgmodule-2.0.so.0
+[New Thread 0x729d212b5000 (LWP 57)]
+[New Thread 0x729d0bdba000 (LWP 58)]
+[New Thread 0x729d09ab8000 (LWP 59)]
+gpu_visible=1 gpu_id=0 uuid=22f04c0cb6c29b756f9d7e08fa7d7537 name=Quadro RTX 8000 driver=13.1 cuda=13.1
+[Detaching after fork from child process 60]
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.560: Failed to load plugin '/app/native/build/libretinaface_parser.so': /app/native/build/libretinaface_parser.so: undefined symbol: cudaPointerGetAttributes
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.598: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmplex.so': libmjpegutils-2.1.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.633: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmpg123.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.645: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstopenmpt.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.719: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.775: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdvdread.so': libdvdread.so.8: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.776: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspandsp.so': libjbig.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.788: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsndfile.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.805: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpulseaudio.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.860: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstfluidsynthmidi.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.869: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlame.so': libmp3lame.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.890: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstresindvd.so': libdvdnav.so.4: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:60): GStreamer-WARNING **: 00:45:17.894: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdtsdec.so': libdca.so.0: cannot open shared object file: No such file or directory
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcoreelements.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstbase-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstisomp4.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstriff-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstaudio-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstvideo-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstrtp-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgsttag-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstpbutils-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/liborc-0.4.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstvideoparsersbad.so
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstcodecparsers-1.0.so.0
+warning: could not find '.gnu_debugaltlink' file for /usr/lib/x86_64-linux-gnu/libgstallocators-1.0.so.0
+[New Thread 0x729ceffff000 (LWP 68)]
+Starting pipeline on GPU 0 for /app/test_videos/friendsshort_50f.mp4
+[New Thread 0x729cc75ff000 (LWP 69)]
+[New Thread 0x729cc6dfe000 (LWP 70)]
+[New Thread 0x729cc5bdc000 (LWP 71)]
+[New Thread 0x729cc53db000 (LWP 72)]
+[New Thread 0x729cc4bda000 (LWP 73)]
+[New Thread 0x729cbcb51000 (LWP 74)]
+[New Thread 0x729a65fff000 (LWP 75)]
+[New Thread 0x729a657fe000 (LWP 76)]
+[New Thread 0x729a64ffd000 (LWP 77)]
+[New Thread 0x729a3bfff000 (LWP 78)]
+free(): double free detected in tcache 2
+
+Thread 7 "post-retinaface" received signal SIGABRT, Aborted.
+[Switching to Thread 0x729cc6dfe000 (LWP 70)]
+0x0000729d2740eb2c in pthread_kill () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#0  0x0000729d2740eb2c in pthread_kill () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x0000729d273b527e in raise () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x0000729d273988ff in abort () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x0000729d273997b6 in ??? () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#4  0x0000729d27418ff5 in ??? () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#5  0x0000729d2741b55f in ??? () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#6  0x0000729d2741ddce in free () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x0000729d27c96028 in nvds_destroy_meta_pool () at /opt/nvidia/deepstream/deepstream-9.0/lib/libnvds_meta.so
+#8  0x0000729d27c94de4 in nvds_destroy_batch_meta () at /opt/nvidia/deepstream/deepstream-9.0/lib/libnvds_meta.so
+#9  0x0000729d27e9b16b in gst_buffer_foreach_meta () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#10 0x0000729d27ea0d7f in gst_buffer_pool_release_buffer () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#11 0x0000729d27ea0e68 in ??? () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#12 0x0000729d27ed6a24 in gst_mini_object_unref () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#13 0x0000729d12ea0648 in ??? () at /usr/lib/x86_64-linux-gnu/libgstbase-1.0.so.0
+#14 0x0000729d12ed046d in ??? () at /usr/lib/x86_64-linux-gnu/libgstbase-1.0.so.0
+#15 0x0000729d12e9d02e in ??? () at /usr/lib/x86_64-linux-gnu/libgstbase-1.0.so.0
+#16 0x0000729d27ee08ec in ??? () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#17 0x0000729d27ee3d96 in ??? () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#18 0x0000729d27ee43e4 in gst_pad_push () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#19 0x0000729d200c11e9 in ??? () at /usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstcoreelements.so
+#20 0x0000729d27f0fbb4 in ??? () at /usr/lib/x86_64-linux-gnu/libgstreamer-1.0.so.0
+#21 0x0000729d27d2f422 in ??? () at /usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
+#22 0x0000729d27d29e62 in ??? () at /usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
+#23 0x0000729d2740caa4 in ??? () at /usr/lib/x86_64-linux-gnu/libc.so.6
+#24 0x0000729d27499a64 in clone () at /usr/lib/x86_64-linux-gnu/libc.so.6

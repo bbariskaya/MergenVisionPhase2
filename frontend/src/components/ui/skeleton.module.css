@@ -1,0 +1,29 @@
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-subtle) 25%,
+    var(--color-border) 50%,
+    var(--color-surface-subtle) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.text {
+  height: 1em;
+  margin-bottom: var(--space-2);
+}
+
+.circle {
+  border-radius: 50%;
+}

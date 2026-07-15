@@ -1,0 +1,32 @@
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.335: Failed to load plugin '/app/native/build/libretinaface_parser.so': /app/native/build/libretinaface_parser.so: undefined symbol: cudaPointerGetAttributes
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.372: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmplex.so': libmjpegutils-2.1.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.408: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmpg123.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.419: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstopenmpt.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.491: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.546: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdvdread.so': libdvdread.so.8: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.547: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspandsp.so': libjbig.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.559: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsndfile.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.575: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpulseaudio.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.630: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstfluidsynthmidi.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.639: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlame.so': libmp3lame.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.659: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstresindvd.so': libdvdnav.so.4: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:22:59.664: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdtsdec.so': libdca.so.0: cannot open shared object file: No such file or directory
+[TensorRT] [defaultAllocator.cpp::allocate::53] Error Code 1: Cuda Runtime (In allocate at /_src/common/dispatch/defaultAllocator.cpp:53)
+[TensorRT] Requested amount of GPU memory (9581363200 bytes) could not be allocated. There may not be enough free memory for allocation to succeed.
+[TensorRT] [executionContext.cpp::initializeExecutionContext::633] Error Code 2: OutOfMemory (Requested size was 9581363200 bytes.)
+[RetinaFaceEngine] createExecutionContext failed
+ERROR from element retinaface: failed to initialize RetinaFace engine
+Debug: /app/native/plugins/gst-nvdsretinaface/gstnvdsretinaface.cpp(162): gst_nvdsretinaface_start (): /GstPipeline:mergenvision-deepstream-worker/GstNvDsRetinaFace:retinaface

@@ -1,0 +1,11 @@
+/app/native/build/CMakeFiles/mergenvision_kernels.dir
+/app/native/build/CMakeFiles/retinaface_postproc.dir
+/app/native/build/CMakeFiles/retinaface_parser.dir
+/app/native/build/CMakeFiles/deepstream_face_worker.dir
+/app/native/build/CMakeFiles/render_annotated_video.dir
+/app/native/build/CMakeFiles/edit_cache.dir
+/app/native/build/CMakeFiles/rebuild_cache.dir
+/app/native/build/plugins/gst-nvdsretinaface/CMakeFiles/retinaface_engine.dir
+/app/native/build/plugins/gst-nvdsretinaface/CMakeFiles/gstnvdsretinaface.dir
+/app/native/build/plugins/gst-nvdsretinaface/CMakeFiles/edit_cache.dir
+/app/native/build/plugins/gst-nvdsretinaface/CMakeFiles/rebuild_cache.dir

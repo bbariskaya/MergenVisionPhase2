@@ -20,7 +20,19 @@ artifacts:
         rejected_for_phase2_runtime: false
       - path: engines/retinaface_r50_dynamic.engine
         sha256: 8d1cc252042b1d80e36b9ea1d5b9e7302e81b747cb73701b06fcd1fee34ee68e
+        rejected_for_phase2_runtime: true
+        rejected_reason: Built against TensorRT 10.3; DeepStream 9.0 runtime uses TensorRT 10.14.
+      - path: engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
+        sha256: 6563c70086bc08fe7d30b60b36d99a410a2bff36cdbc40da539a43a32cbf0e17
         rejected_for_phase2_runtime: false
+        build_command: >-
+          trtexec --onnx=models/retinaface_r50_dynamic.onnx
+          --saveEngine=engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
+          --fp16 --minShapes=input:1x3x640x640 --optShapes=input:64x3x640x640
+          --maxShapes=input:256x3x640x640 --skipInference
+        build_runtime: nvcr.io/nvidia/deepstream:9.0-triton-multiarch
+        trt_version: 10.14.1
+        cuda_version: 13.1
     tensor_contract:
       input:
         name: input
@@ -100,7 +112,19 @@ artifacts:
         rejected_for_phase2_runtime: false
       - path: engines/glintr100.engine
         sha256: 7c106f8222c5d53908de0b02ee38bed32997878ee0005b0652db1a49972414f5
+        rejected_for_phase2_runtime: true
+        rejected_reason: Built against TensorRT 10.3; DeepStream 9.0 runtime uses TensorRT 10.14.
+      - path: engines/glintr100.bs1.opt128.max256.fp16.trt1014.engine
+        sha256: 524bf691a6524a070b275bf70e5642abfa7c5e08d09538652d8160e424fdefa9
         rejected_for_phase2_runtime: false
+        build_command: >-
+          trtexec --onnx=models/glintr100.onnx
+          --saveEngine=engines/glintr100.bs1.opt128.max256.fp16.trt1014.engine
+          --fp16 --minShapes=input.1:1x3x112x112 --optShapes=input.1:128x3x112x112
+          --maxShapes=input.1:256x3x112x112 --skipInference
+        build_runtime: nvcr.io/nvidia/deepstream:9.0-triton-multiarch
+        trt_version: 10.14.1
+        cuda_version: 13.1
     tensor_contract:
       input:
         name: input.1

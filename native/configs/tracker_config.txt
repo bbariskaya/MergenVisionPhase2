@@ -1,0 +1,12 @@
+# NvDCF tracker configuration for offline face tracking.
+# Mandatory properties:
+#   tracker-width/tracker-height: multiple of 32 for NvDCF
+#   gpu-id
+#   ll-lib-file
+#   ll-config-file
+[tracker]
+tracker-width=640
+tracker-height=384
+gpu-id=0
+ll-lib-file=/opt/nvidia/deepstream/deepstream-9.0/lib/libnvds_nvmultiobjecttracker.so
+ll-config-file=/app/native/configs/tracker_NvDCF_mergen.yml

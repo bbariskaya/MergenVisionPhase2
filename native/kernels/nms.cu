@@ -19,36 +19,34 @@ __device__ inline float iou(const float* a, const float* b) {
     return uni > 0.0f ? inter / uni : 0.0f;
 }
 
-// Parallel approximate NMS.
-//
-// The candidate list is already sorted by descending score (``order``).
-// Thread i processes sorted position i. If any higher-scoring position j<i
-// overlaps above the threshold, candidate i is marked suppressed.
-//
-// This is deterministic, fully GPU-resident, and exposes a large amount of
-// parallelism. It can be marginally more aggressive than greedy NMS: a box
-// may be suppressed by a higher-scoring box that itself would later be
-// suppressed. For typical face densities the output is identical.
+// Parallel approximate NMS over a score-sorted candidate list.
+// Thread i processes sorted position i. Invalid entries (score <= threshold or
+// non-positive area) are not kept and do not suppress valid boxes.
 __global__ void nms_kernel(
     const float* __restrict__ boxes,  // [N, 4]
+    const float* __restrict__ scores, // [N]
     const int* __restrict__ order,    // sorted indices (score descending)
     int n,
-    float threshold,
+    float iou_threshold,
+    float score_threshold,
     uint8_t* __restrict__ keep)
 {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n) return;
 
-    // The highest-scoring box always survives.
+    keep[idx] = 0;
+    int idx_i = order[idx];
+    const float* box_i = boxes + idx_i * 4;
+    if (scores[idx_i] <= score_threshold) return;
+    if (box_i[2] <= box_i[0] || box_i[3] <= box_i[1]) return;
+
     keep[idx] = 1;
     if (idx == 0) return;
 
-    int idx_i = order[idx];
-    const float* box_i = boxes + idx_i * 4;
-
     for (int j = 0; j < idx; ++j) {
         int idx_j = order[j];
-        if (iou(box_i, boxes + idx_j * 4) > threshold) {
+        if (!keep[j]) continue; // only consider surviving higher-scored boxes
+        if (iou(box_i, boxes + idx_j * 4) > iou_threshold) {
             keep[idx] = 0;
             return;
         }
@@ -57,16 +55,19 @@ __global__ void nms_kernel(
 
 extern "C" int mergenvision_nms(
     const float* d_boxes,
+    const float* d_scores,
     const int* d_order,
     int n,
-    float threshold,
+    float iou_threshold,
+    float score_threshold,
     uint8_t* d_keep,
     cudaStream_t stream)
 {
     if (n <= 0) return cudaSuccess;
     constexpr int threads = 256;
     int blocks = (n + threads - 1) / threads;
-    nms_kernel<<<blocks, threads, 0, stream>>>(d_boxes, d_order, n, threshold, d_keep);
+    nms_kernel<<<blocks, threads, 0, stream>>>(
+        d_boxes, d_scores, d_order, n, iou_threshold, score_threshold, d_keep);
     return cudaGetLastError();
 }
 

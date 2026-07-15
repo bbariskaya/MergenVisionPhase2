@@ -1,0 +1,40 @@
+gpu_visible=1 gpu_id=0 uuid=22f04c0cb6c29b756f9d7e08fa7d7537 name=Quadro RTX 8000 driver=13.1 cuda=13.1
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.311: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmplex.so': libmjpegutils-2.1.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.352: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmpg123.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.364: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstopenmpt.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.479: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.540: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdvdread.so': libdvdread.so.8: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.541: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspandsp.so': libjbig.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.554: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsndfile.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.571: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpulseaudio.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.629: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstfluidsynthmidi.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.638: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlame.so': libmp3lame.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.660: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstresindvd.so': libdvdnav.so.4: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:36): GStreamer-WARNING **: 00:30:35.665: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdtsdec.so': libdca.so.0: cannot open shared object file: No such file or directory
+Starting pipeline on GPU 0 for /app/test_videos/friendsshort_50f.mp4
+0:00:00.599103033 [33m   32[00m 0x61fcd8c43080 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<primary-inference>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/app/engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
+0:00:00.599160787 [33m   32[00m 0x61fcd8c43080 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<primary-inference>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /app/engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine
+0:00:01.251915643 [33m   32[00m 0x61fcd8c43080 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<primary-inference>[00m [UID 1]: Load new model:/app/native/configs/retinaface_pgie_config.txt sucessfully
+Opening in BLOCKING MODE 
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 4
+0   INPUT  kFLOAT input           3x640x640       min: 1x3x640x640     opt: 64x3x640x640    Max: 256x3x640x640   
+1   OUTPUT kFLOAT loc             16800x4         min: 0               opt: 0               Max: 0               
+2   OUTPUT kFLOAT conf            16800x2         min: 0               opt: 0               Max: 0               
+3   OUTPUT kFLOAT landms          16800x10        min: 0               opt: 0               Max: 0               
+
+nvstreammux: Successfully handled EOS for source_id=0
+End of stream
+Done. frames=50 detections=12 wall=1.269s error=0
+completed=true decoded_frames=50 processed_frames=50 detections=12 tracklets=1 eos_clean=true exit_code=0

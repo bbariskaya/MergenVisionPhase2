@@ -1,0 +1,75 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.pending {
+  background: var(--color-info-subtle);
+  color: var(--color-info);
+}
+.pending .dot {
+  background: var(--color-info);
+}
+
+.uploading,
+.validating,
+.queued,
+.finalizing,
+.rendering {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
+}
+.uploading .dot,
+.validating .dot,
+.queued .dot,
+.finalizing .dot,
+.rendering .dot {
+  background: var(--color-warning);
+}
+
+.processing {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.processing .dot {
+  background: #3730a3;
+}
+
+.completed {
+  background: var(--color-success-subtle);
+  color: var(--color-success);
+}
+.completed .dot {
+  background: var(--color-success);
+}
+
+.failed,
+.cancelled {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+.failed .dot,
+.cancelled .dot {
+  background: var(--color-danger);
+}
+
+.unknown {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+}
+.unknown .dot {
+  background: var(--color-text-muted);
+}

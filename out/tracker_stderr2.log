@@ -1,0 +1,26 @@
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.355: Failed to load plugin '/app/native/build/libretinaface_parser.so': /app/native/build/libretinaface_parser.so: undefined symbol: cudaPointerGetAttributes
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.389: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmplex.so': libmjpegutils-2.1.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.424: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstmpg123.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.436: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstopenmpt.so': libmpg123.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.508: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.565: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdvdread.so': libdvdread.so.8: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.566: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstspandsp.so': libjbig.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.578: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstsndfile.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.595: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstpulseaudio.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.650: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstfluidsynthmidi.so': libFLAC.so.12: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.660: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstlame.so': libmp3lame.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.681: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstresindvd.so': libdvdnav.so.4: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:35): GStreamer-WARNING **: 01:25:08.686: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgstdtsdec.so': libdca.so.0: cannot open shared object file: No such file or directory

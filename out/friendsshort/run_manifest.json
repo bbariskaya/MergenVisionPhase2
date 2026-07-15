@@ -1,0 +1,11 @@
+{
+  "input": "/app/test_videos/friendsshort.mp4",
+  "gpu_id": 0,
+  "frames_processed": 1087,
+  "total_detections": 1646,
+  "unique_raw_track_ids": 1,
+  "wall_time_sec": 5.575,
+  "first_frame_latency_sec": 1.023,
+  "pgie_config": "native/configs/retinaface_pgie_config.txt",
+  "tracker": "offline_iou_to_be_implemented"
+}

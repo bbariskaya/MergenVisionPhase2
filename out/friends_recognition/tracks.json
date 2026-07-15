@@ -1,0 +1,1934 @@
+{
+  "tracks": [
+    {
+      "track_id": 1,
+      "label": "unknown",
+      "frames": [
+        7,
+        16
+      ],
+      "detections": 10,
+      "avg_similarity": 0.1576
+    },
+    {
+      "track_id": 2,
+      "label": "unknown",
+      "frames": [
+        16,
+        16
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0997
+    },
+    {
+      "track_id": 3,
+      "label": "Rachel",
+      "frames": [
+        17,
+        54
+      ],
+      "detections": 38,
+      "avg_similarity": 0.5592
+    },
+    {
+      "track_id": 4,
+      "label": "unknown",
+      "frames": [
+        52,
+        52
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0583
+    },
+    {
+      "track_id": 5,
+      "label": "Rachel",
+      "frames": [
+        55,
+        82
+      ],
+      "detections": 27,
+      "avg_similarity": 0.5207
+    },
+    {
+      "track_id": 6,
+      "label": "Chandler",
+      "frames": [
+        55,
+        127
+      ],
+      "detections": 72,
+      "avg_similarity": 0.4681
+    },
+    {
+      "track_id": 7,
+      "label": "Phoebe",
+      "frames": [
+        58,
+        111
+      ],
+      "detections": 51,
+      "avg_similarity": 0.4527
+    },
+    {
+      "track_id": 8,
+      "label": "unknown",
+      "frames": [
+        94,
+        94
+      ],
+      "detections": 1,
+      "avg_similarity": 0.3587
+    },
+    {
+      "track_id": 9,
+      "label": "Joey",
+      "frames": [
+        94,
+        94
+      ],
+      "detections": 1,
+      "avg_similarity": 0.4506
+    },
+    {
+      "track_id": 10,
+      "label": "Monica",
+      "frames": [
+        128,
+        154
+      ],
+      "detections": 27,
+      "avg_similarity": 0.5499
+    },
+    {
+      "track_id": 11,
+      "label": "unknown",
+      "frames": [
+        153,
+        153
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1166
+    },
+    {
+      "track_id": 12,
+      "label": "Rachel",
+      "frames": [
+        167,
+        272
+      ],
+      "detections": 106,
+      "avg_similarity": 0.6717
+    },
+    {
+      "track_id": 13,
+      "label": "unknown",
+      "frames": [
+        280,
+        284
+      ],
+      "detections": 5,
+      "avg_similarity": 0.0822
+    },
+    {
+      "track_id": 14,
+      "label": "unknown",
+      "frames": [
+        290,
+        290
+      ],
+      "detections": 1,
+      "avg_similarity": 0.112
+    },
+    {
+      "track_id": 15,
+      "label": "unknown",
+      "frames": [
+        303,
+        303
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1307
+    },
+    {
+      "track_id": 16,
+      "label": "Monica",
+      "frames": [
+        304,
+        391
+      ],
+      "detections": 88,
+      "avg_similarity": 0.6609
+    },
+    {
+      "track_id": 17,
+      "label": "Chandler",
+      "frames": [
+        304,
+        323
+      ],
+      "detections": 20,
+      "avg_similarity": 0.6318
+    },
+    {
+      "track_id": 18,
+      "label": "Phoebe",
+      "frames": [
+        346,
+        391
+      ],
+      "detections": 46,
+      "avg_similarity": 0.5804
+    },
+    {
+      "track_id": 19,
+      "label": "Rachel",
+      "frames": [
+        392,
+        442
+      ],
+      "detections": 51,
+      "avg_similarity": 0.8604
+    },
+    {
+      "track_id": 20,
+      "label": "Rachel",
+      "frames": [
+        443,
+        506
+      ],
+      "detections": 61,
+      "avg_similarity": 0.543
+    },
+    {
+      "track_id": 21,
+      "label": "Chandler",
+      "frames": [
+        443,
+        447
+      ],
+      "detections": 5,
+      "avg_similarity": 0.5606
+    },
+    {
+      "track_id": 22,
+      "label": "unknown",
+      "frames": [
+        448,
+        466
+      ],
+      "detections": 19,
+      "avg_similarity": 0.2493
+    },
+    {
+      "track_id": 23,
+      "label": "Chandler",
+      "frames": [
+        467,
+        506
+      ],
+      "detections": 40,
+      "avg_similarity": 0.5736
+    },
+    {
+      "track_id": 24,
+      "label": "Rachel",
+      "frames": [
+        507,
+        808
+      ],
+      "detections": 302,
+      "avg_similarity": 0.7995
+    },
+    {
+      "track_id": 25,
+      "label": "Chandler",
+      "frames": [
+        809,
+        893
+      ],
+      "detections": 85,
+      "avg_similarity": 0.5431
+    },
+    {
+      "track_id": 26,
+      "label": "Monica",
+      "frames": [
+        809,
+        917
+      ],
+      "detections": 109,
+      "avg_similarity": 0.6694
+    },
+    {
+      "track_id": 27,
+      "label": "Phoebe",
+      "frames": [
+        894,
+        917
+      ],
+      "detections": 24,
+      "avg_similarity": 0.5029
+    },
+    {
+      "track_id": 28,
+      "label": "Rachel",
+      "frames": [
+        918,
+        1009
+      ],
+      "detections": 91,
+      "avg_similarity": 0.7671
+    },
+    {
+      "track_id": 29,
+      "label": "Rachel",
+      "frames": [
+        1004,
+        1004
+      ],
+      "detections": 1,
+      "avg_similarity": 0.5394
+    },
+    {
+      "track_id": 30,
+      "label": "Rachel",
+      "frames": [
+        1010,
+        1049
+      ],
+      "detections": 36,
+      "avg_similarity": 0.6973
+    },
+    {
+      "track_id": 31,
+      "label": "Phoebe",
+      "frames": [
+        1022,
+        1081
+      ],
+      "detections": 54,
+      "avg_similarity": 0.524
+    },
+    {
+      "track_id": 32,
+      "label": "unknown",
+      "frames": [
+        1047,
+        1047
+      ],
+      "detections": 1,
+      "avg_similarity": 0.076
+    },
+    {
+      "track_id": 33,
+      "label": "unknown",
+      "frames": [
+        1085,
+        1107
+      ],
+      "detections": 18,
+      "avg_similarity": 0.1057
+    },
+    {
+      "track_id": 34,
+      "label": "unknown",
+      "frames": [
+        1090,
+        1114
+      ],
+      "detections": 25,
+      "avg_similarity": 0.2268
+    },
+    {
+      "track_id": 35,
+      "label": "unknown",
+      "frames": [
+        1096,
+        1116
+      ],
+      "detections": 14,
+      "avg_similarity": 0.1036
+    },
+    {
+      "track_id": 36,
+      "label": "unknown",
+      "frames": [
+        1116,
+        1124
+      ],
+      "detections": 9,
+      "avg_similarity": 0.1753
+    },
+    {
+      "track_id": 37,
+      "label": "Rachel",
+      "frames": [
+        1119,
+        1315
+      ],
+      "detections": 197,
+      "avg_similarity": 0.6261
+    },
+    {
+      "track_id": 38,
+      "label": "unknown",
+      "frames": [
+        1188,
+        1191
+      ],
+      "detections": 3,
+      "avg_similarity": 0.1024
+    },
+    {
+      "track_id": 39,
+      "label": "Rachel",
+      "frames": [
+        1348,
+        1878
+      ],
+      "detections": 530,
+      "avg_similarity": 0.6899
+    },
+    {
+      "track_id": 40,
+      "label": "Rachel",
+      "frames": [
+        1879,
+        1880
+      ],
+      "detections": 2,
+      "avg_similarity": 0.4117
+    },
+    {
+      "track_id": 41,
+      "label": "unknown",
+      "frames": [
+        1895,
+        1895
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1306
+    },
+    {
+      "track_id": 42,
+      "label": "Rachel",
+      "frames": [
+        1906,
+        1926
+      ],
+      "detections": 19,
+      "avg_similarity": 0.545
+    },
+    {
+      "track_id": 43,
+      "label": "unknown",
+      "frames": [
+        1934,
+        1934
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1243
+    },
+    {
+      "track_id": 44,
+      "label": "Rachel",
+      "frames": [
+        1937,
+        1978
+      ],
+      "detections": 42,
+      "avg_similarity": 0.711
+    },
+    {
+      "track_id": 45,
+      "label": "unknown",
+      "frames": [
+        1946,
+        1960
+      ],
+      "detections": 9,
+      "avg_similarity": 0.0997
+    },
+    {
+      "track_id": 46,
+      "label": "unknown",
+      "frames": [
+        1962,
+        1967
+      ],
+      "detections": 6,
+      "avg_similarity": 0.1667
+    },
+    {
+      "track_id": 47,
+      "label": "unknown",
+      "frames": [
+        1967,
+        1972
+      ],
+      "detections": 5,
+      "avg_similarity": 0.0889
+    },
+    {
+      "track_id": 48,
+      "label": "Joey",
+      "frames": [
+        1979,
+        2004
+      ],
+      "detections": 26,
+      "avg_similarity": 0.5853
+    },
+    {
+      "track_id": 49,
+      "label": "Rachel",
+      "frames": [
+        2005,
+        2014
+      ],
+      "detections": 10,
+      "avg_similarity": 0.6229
+    },
+    {
+      "track_id": 50,
+      "label": "Joey",
+      "frames": [
+        2022,
+        2146
+      ],
+      "detections": 125,
+      "avg_similarity": 0.7722
+    },
+    {
+      "track_id": 51,
+      "label": "Joey",
+      "frames": [
+        2152,
+        2200
+      ],
+      "detections": 49,
+      "avg_similarity": 0.471
+    },
+    {
+      "track_id": 52,
+      "label": "Rachel",
+      "frames": [
+        2194,
+        2251
+      ],
+      "detections": 58,
+      "avg_similarity": 0.7594
+    },
+    {
+      "track_id": 53,
+      "label": "Joey",
+      "frames": [
+        2252,
+        2257
+      ],
+      "detections": 6,
+      "avg_similarity": 0.8072
+    },
+    {
+      "track_id": 54,
+      "label": "unknown",
+      "frames": [
+        2258,
+        2269
+      ],
+      "detections": 8,
+      "avg_similarity": 0.114
+    },
+    {
+      "track_id": 55,
+      "label": "Joey",
+      "frames": [
+        2264,
+        2283
+      ],
+      "detections": 17,
+      "avg_similarity": 0.7527
+    },
+    {
+      "track_id": 56,
+      "label": "unknown",
+      "frames": [
+        2276,
+        2276
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1122
+    },
+    {
+      "track_id": 57,
+      "label": "unknown",
+      "frames": [
+        2284,
+        2284
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1399
+    },
+    {
+      "track_id": 58,
+      "label": "Rachel",
+      "frames": [
+        2285,
+        2386
+      ],
+      "detections": 90,
+      "avg_similarity": 0.5197
+    },
+    {
+      "track_id": 59,
+      "label": "unknown",
+      "frames": [
+        2331,
+        2340
+      ],
+      "detections": 6,
+      "avg_similarity": 0.3658
+    },
+    {
+      "track_id": 60,
+      "label": "unknown",
+      "frames": [
+        2356,
+        2357
+      ],
+      "detections": 2,
+      "avg_similarity": 0.3439
+    },
+    {
+      "track_id": 61,
+      "label": "Joey",
+      "frames": [
+        2382,
+        2430
+      ],
+      "detections": 47,
+      "avg_similarity": 0.5276
+    },
+    {
+      "track_id": 62,
+      "label": "unknown",
+      "frames": [
+        2396,
+        2396
+      ],
+      "detections": 1,
+      "avg_similarity": 0.447
+    },
+    {
+      "track_id": 63,
+      "label": "unknown",
+      "frames": [
+        2409,
+        2417
+      ],
+      "detections": 9,
+      "avg_similarity": 0.2392
+    },
+    {
+      "track_id": 64,
+      "label": "unknown",
+      "frames": [
+        2435,
+        2468
+      ],
+      "detections": 31,
+      "avg_similarity": 0.1116
+    },
+    {
+      "track_id": 65,
+      "label": "unknown",
+      "frames": [
+        2437,
+        2437
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1484
+    },
+    {
+      "track_id": 66,
+      "label": "unknown",
+      "frames": [
+        2465,
+        2468
+      ],
+      "detections": 4,
+      "avg_similarity": 0.2521
+    },
+    {
+      "track_id": 67,
+      "label": "Rachel",
+      "frames": [
+        2469,
+        2512
+      ],
+      "detections": 44,
+      "avg_similarity": 0.6647
+    },
+    {
+      "track_id": 68,
+      "label": "Joey",
+      "frames": [
+        2513,
+        2638
+      ],
+      "detections": 126,
+      "avg_similarity": 0.7823
+    },
+    {
+      "track_id": 69,
+      "label": "Rachel",
+      "frames": [
+        2639,
+        2679
+      ],
+      "detections": 41,
+      "avg_similarity": 0.7754
+    },
+    {
+      "track_id": 70,
+      "label": "Joey",
+      "frames": [
+        2680,
+        2722
+      ],
+      "detections": 43,
+      "avg_similarity": 0.776
+    },
+    {
+      "track_id": 71,
+      "label": "Rachel",
+      "frames": [
+        2723,
+        2792
+      ],
+      "detections": 70,
+      "avg_similarity": 0.6921
+    },
+    {
+      "track_id": 72,
+      "label": "Joey",
+      "frames": [
+        2793,
+        2816
+      ],
+      "detections": 24,
+      "avg_similarity": 0.7405
+    },
+    {
+      "track_id": 73,
+      "label": "Rachel",
+      "frames": [
+        2817,
+        2834
+      ],
+      "detections": 18,
+      "avg_similarity": 0.6788
+    },
+    {
+      "track_id": 74,
+      "label": "Chandler",
+      "frames": [
+        2924,
+        3007
+      ],
+      "detections": 84,
+      "avg_similarity": 0.6433
+    },
+    {
+      "track_id": 75,
+      "label": "Joey",
+      "frames": [
+        3008,
+        3066
+      ],
+      "detections": 59,
+      "avg_similarity": 0.7788
+    },
+    {
+      "track_id": 76,
+      "label": "unknown",
+      "frames": [
+        3067,
+        3169
+      ],
+      "detections": 98,
+      "avg_similarity": 0.2802
+    },
+    {
+      "track_id": 77,
+      "label": "unknown",
+      "frames": [
+        3134,
+        3152
+      ],
+      "detections": 16,
+      "avg_similarity": 0.1271
+    },
+    {
+      "track_id": 78,
+      "label": "unknown",
+      "frames": [
+        3170,
+        3176
+      ],
+      "detections": 7,
+      "avg_similarity": 0.2186
+    },
+    {
+      "track_id": 79,
+      "label": "unknown",
+      "frames": [
+        3176,
+        3176
+      ],
+      "detections": 1,
+      "avg_similarity": 0.077
+    },
+    {
+      "track_id": 80,
+      "label": "Joey",
+      "frames": [
+        3177,
+        3200
+      ],
+      "detections": 24,
+      "avg_similarity": 0.5812
+    },
+    {
+      "track_id": 81,
+      "label": "unknown",
+      "frames": [
+        3203,
+        3230
+      ],
+      "detections": 27,
+      "avg_similarity": 0.0835
+    },
+    {
+      "track_id": 82,
+      "label": "unknown",
+      "frames": [
+        3204,
+        3204
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1335
+    },
+    {
+      "track_id": 83,
+      "label": "unknown",
+      "frames": [
+        3212,
+        3212
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0745
+    },
+    {
+      "track_id": 84,
+      "label": "unknown",
+      "frames": [
+        3218,
+        3218
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0438
+    },
+    {
+      "track_id": 85,
+      "label": "unknown",
+      "frames": [
+        3231,
+        3233
+      ],
+      "detections": 3,
+      "avg_similarity": 0.1902
+    },
+    {
+      "track_id": 86,
+      "label": "Chandler",
+      "frames": [
+        3234,
+        3261
+      ],
+      "detections": 28,
+      "avg_similarity": 0.5572
+    },
+    {
+      "track_id": 87,
+      "label": "Monica",
+      "frames": [
+        3263,
+        3302
+      ],
+      "detections": 38,
+      "avg_similarity": 0.4573
+    },
+    {
+      "track_id": 88,
+      "label": "Joey",
+      "frames": [
+        3263,
+        3302
+      ],
+      "detections": 38,
+      "avg_similarity": 0.531
+    },
+    {
+      "track_id": 89,
+      "label": "Phoebe",
+      "frames": [
+        3283,
+        3286
+      ],
+      "detections": 2,
+      "avg_similarity": 0.5234
+    },
+    {
+      "track_id": 90,
+      "label": "Monica",
+      "frames": [
+        3303,
+        3367
+      ],
+      "detections": 65,
+      "avg_similarity": 0.6653
+    },
+    {
+      "track_id": 91,
+      "label": "Chandler",
+      "frames": [
+        3368,
+        3442
+      ],
+      "detections": 65,
+      "avg_similarity": 0.6823
+    },
+    {
+      "track_id": 92,
+      "label": "Rachel",
+      "frames": [
+        3368,
+        3441
+      ],
+      "detections": 69,
+      "avg_similarity": 0.716
+    },
+    {
+      "track_id": 93,
+      "label": "Joey",
+      "frames": [
+        3368,
+        3416
+      ],
+      "detections": 47,
+      "avg_similarity": 0.7653
+    },
+    {
+      "track_id": 94,
+      "label": "Joey",
+      "frames": [
+        3429,
+        3442
+      ],
+      "detections": 14,
+      "avg_similarity": 0.7062
+    },
+    {
+      "track_id": 95,
+      "label": "unknown",
+      "frames": [
+        3443,
+        3467
+      ],
+      "detections": 15,
+      "avg_similarity": 0.1688
+    },
+    {
+      "track_id": 96,
+      "label": "unknown",
+      "frames": [
+        3443,
+        3464
+      ],
+      "detections": 16,
+      "avg_similarity": 0.4025
+    },
+    {
+      "track_id": 97,
+      "label": "Phoebe",
+      "frames": [
+        3445,
+        3452
+      ],
+      "detections": 4,
+      "avg_similarity": 0.5674
+    },
+    {
+      "track_id": 98,
+      "label": "Rachel",
+      "frames": [
+        3446,
+        3447
+      ],
+      "detections": 2,
+      "avg_similarity": 0.5416
+    },
+    {
+      "track_id": 99,
+      "label": "unknown",
+      "frames": [
+        3461,
+        3483
+      ],
+      "detections": 20,
+      "avg_similarity": 0.2589
+    },
+    {
+      "track_id": 100,
+      "label": "unknown",
+      "frames": [
+        3484,
+        3484
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1039
+    },
+    {
+      "track_id": 101,
+      "label": "unknown",
+      "frames": [
+        3489,
+        3519
+      ],
+      "detections": 31,
+      "avg_similarity": 0.3247
+    },
+    {
+      "track_id": 102,
+      "label": "unknown",
+      "frames": [
+        3505,
+        3533
+      ],
+      "detections": 29,
+      "avg_similarity": 0.3207
+    },
+    {
+      "track_id": 103,
+      "label": "Rachel",
+      "frames": [
+        3534,
+        3587
+      ],
+      "detections": 54,
+      "avg_similarity": 0.8224
+    },
+    {
+      "track_id": 104,
+      "label": "Rachel",
+      "frames": [
+        3588,
+        3615
+      ],
+      "detections": 28,
+      "avg_similarity": 0.5989
+    },
+    {
+      "track_id": 105,
+      "label": "Phoebe",
+      "frames": [
+        3588,
+        3613
+      ],
+      "detections": 26,
+      "avg_similarity": 0.6045
+    },
+    {
+      "track_id": 106,
+      "label": "unknown",
+      "frames": [
+        3614,
+        3640
+      ],
+      "detections": 25,
+      "avg_similarity": 0.1086
+    },
+    {
+      "track_id": 107,
+      "label": "unknown",
+      "frames": [
+        3624,
+        3624
+      ],
+      "detections": 1,
+      "avg_similarity": 0.373
+    },
+    {
+      "track_id": 108,
+      "label": "Phoebe",
+      "frames": [
+        3667,
+        3805
+      ],
+      "detections": 139,
+      "avg_similarity": 0.5916
+    },
+    {
+      "track_id": 109,
+      "label": "unknown",
+      "frames": [
+        3779,
+        3779
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1
+    },
+    {
+      "track_id": 110,
+      "label": "Rachel",
+      "frames": [
+        3812,
+        3858
+      ],
+      "detections": 47,
+      "avg_similarity": 0.7727
+    },
+    {
+      "track_id": 111,
+      "label": "Joey",
+      "frames": [
+        3859,
+        3968
+      ],
+      "detections": 110,
+      "avg_similarity": 0.5695
+    },
+    {
+      "track_id": 112,
+      "label": "unknown",
+      "frames": [
+        3947,
+        3956
+      ],
+      "detections": 4,
+      "avg_similarity": 0.1431
+    },
+    {
+      "track_id": 113,
+      "label": "Rachel",
+      "frames": [
+        3969,
+        4045
+      ],
+      "detections": 77,
+      "avg_similarity": 0.6843
+    },
+    {
+      "track_id": 114,
+      "label": "unknown",
+      "frames": [
+        3982,
+        4045
+      ],
+      "detections": 63,
+      "avg_similarity": 0.1002
+    },
+    {
+      "track_id": 115,
+      "label": "unknown",
+      "frames": [
+        4012,
+        4015
+      ],
+      "detections": 4,
+      "avg_similarity": 0.1304
+    },
+    {
+      "track_id": 116,
+      "label": "unknown",
+      "frames": [
+        4023,
+        4028
+      ],
+      "detections": 5,
+      "avg_similarity": 0.1012
+    },
+    {
+      "track_id": 117,
+      "label": "Joey",
+      "frames": [
+        4046,
+        4090
+      ],
+      "detections": 45,
+      "avg_similarity": 0.7401
+    },
+    {
+      "track_id": 118,
+      "label": "Joey",
+      "frames": [
+        4091,
+        4166
+      ],
+      "detections": 74,
+      "avg_similarity": 0.4826
+    },
+    {
+      "track_id": 119,
+      "label": "unknown",
+      "frames": [
+        4091,
+        4101
+      ],
+      "detections": 11,
+      "avg_similarity": 0.4452
+    },
+    {
+      "track_id": 120,
+      "label": "unknown",
+      "frames": [
+        4119,
+        4120
+      ],
+      "detections": 2,
+      "avg_similarity": 0.3778
+    },
+    {
+      "track_id": 121,
+      "label": "Rachel",
+      "frames": [
+        4132,
+        4166
+      ],
+      "detections": 35,
+      "avg_similarity": 0.5302
+    },
+    {
+      "track_id": 122,
+      "label": "unknown",
+      "frames": [
+        4167,
+        4167
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0936
+    },
+    {
+      "track_id": 123,
+      "label": "unknown",
+      "frames": [
+        4168,
+        4266
+      ],
+      "detections": 99,
+      "avg_similarity": 0.1027
+    },
+    {
+      "track_id": 124,
+      "label": "Rachel",
+      "frames": [
+        4168,
+        4266
+      ],
+      "detections": 99,
+      "avg_similarity": 0.6437
+    },
+    {
+      "track_id": 125,
+      "label": "unknown",
+      "frames": [
+        4188,
+        4266
+      ],
+      "detections": 76,
+      "avg_similarity": 0.1017
+    },
+    {
+      "track_id": 126,
+      "label": "Joey",
+      "frames": [
+        4267,
+        4389
+      ],
+      "detections": 123,
+      "avg_similarity": 0.8453
+    },
+    {
+      "track_id": 127,
+      "label": "unknown",
+      "frames": [
+        4390,
+        4412
+      ],
+      "detections": 23,
+      "avg_similarity": 0.0994
+    },
+    {
+      "track_id": 128,
+      "label": "Rachel",
+      "frames": [
+        4390,
+        4450
+      ],
+      "detections": 61,
+      "avg_similarity": 0.6776
+    },
+    {
+      "track_id": 129,
+      "label": "unknown",
+      "frames": [
+        4437,
+        4449
+      ],
+      "detections": 13,
+      "avg_similarity": 0.1389
+    },
+    {
+      "track_id": 130,
+      "label": "Joey",
+      "frames": [
+        4451,
+        4574
+      ],
+      "detections": 122,
+      "avg_similarity": 0.5321
+    },
+    {
+      "track_id": 131,
+      "label": "unknown",
+      "frames": [
+        4475,
+        4475
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0932
+    },
+    {
+      "track_id": 132,
+      "label": "unknown",
+      "frames": [
+        4495,
+        4573
+      ],
+      "detections": 65,
+      "avg_similarity": 0.1178
+    },
+    {
+      "track_id": 133,
+      "label": "Rachel",
+      "frames": [
+        4541,
+        4546
+      ],
+      "detections": 3,
+      "avg_similarity": 0.5187
+    },
+    {
+      "track_id": 134,
+      "label": "Rachel",
+      "frames": [
+        4574,
+        4574
+      ],
+      "detections": 1,
+      "avg_similarity": 0.5299
+    },
+    {
+      "track_id": 135,
+      "label": "Joey",
+      "frames": [
+        4575,
+        4762
+      ],
+      "detections": 188,
+      "avg_similarity": 0.8344
+    },
+    {
+      "track_id": 136,
+      "label": "unknown",
+      "frames": [
+        4763,
+        4781
+      ],
+      "detections": 18,
+      "avg_similarity": 0.0727
+    },
+    {
+      "track_id": 137,
+      "label": "Rachel",
+      "frames": [
+        4763,
+        4800
+      ],
+      "detections": 38,
+      "avg_similarity": 0.6282
+    },
+    {
+      "track_id": 138,
+      "label": "unknown",
+      "frames": [
+        4766,
+        4767
+      ],
+      "detections": 2,
+      "avg_similarity": 0.1278
+    },
+    {
+      "track_id": 139,
+      "label": "Joey",
+      "frames": [
+        4801,
+        4841
+      ],
+      "detections": 41,
+      "avg_similarity": 0.8691
+    },
+    {
+      "track_id": 140,
+      "label": "Rachel",
+      "frames": [
+        4842,
+        4889
+      ],
+      "detections": 48,
+      "avg_similarity": 0.6937
+    },
+    {
+      "track_id": 141,
+      "label": "Joey",
+      "frames": [
+        4890,
+        4929
+      ],
+      "detections": 40,
+      "avg_similarity": 0.8481
+    },
+    {
+      "track_id": 142,
+      "label": "Rachel",
+      "frames": [
+        4930,
+        4969
+      ],
+      "detections": 40,
+      "avg_similarity": 0.6465
+    },
+    {
+      "track_id": 143,
+      "label": "Joey",
+      "frames": [
+        4970,
+        5005
+      ],
+      "detections": 36,
+      "avg_similarity": 0.8606
+    },
+    {
+      "track_id": 144,
+      "label": "Rachel",
+      "frames": [
+        5006,
+        5044
+      ],
+      "detections": 39,
+      "avg_similarity": 0.6481
+    },
+    {
+      "track_id": 145,
+      "label": "unknown",
+      "frames": [
+        5042,
+        5043
+      ],
+      "detections": 2,
+      "avg_similarity": 0.1204
+    },
+    {
+      "track_id": 146,
+      "label": "Joey",
+      "frames": [
+        5045,
+        5066
+      ],
+      "detections": 22,
+      "avg_similarity": 0.86
+    },
+    {
+      "track_id": 147,
+      "label": "Rachel",
+      "frames": [
+        5067,
+        5084
+      ],
+      "detections": 18,
+      "avg_similarity": 0.6069
+    },
+    {
+      "track_id": 148,
+      "label": "Joey",
+      "frames": [
+        5085,
+        5219
+      ],
+      "detections": 135,
+      "avg_similarity": 0.752
+    },
+    {
+      "track_id": 149,
+      "label": "unknown",
+      "frames": [
+        5108,
+        5112
+      ],
+      "detections": 5,
+      "avg_similarity": 0.3466
+    },
+    {
+      "track_id": 150,
+      "label": "Rachel",
+      "frames": [
+        5138,
+        5219
+      ],
+      "detections": 82,
+      "avg_similarity": 0.6075
+    },
+    {
+      "track_id": 151,
+      "label": "Joey",
+      "frames": [
+        5220,
+        5249
+      ],
+      "detections": 29,
+      "avg_similarity": 0.5919
+    },
+    {
+      "track_id": 152,
+      "label": "Rachel",
+      "frames": [
+        5242,
+        5242
+      ],
+      "detections": 1,
+      "avg_similarity": 0.6866
+    },
+    {
+      "track_id": 153,
+      "label": "Rachel",
+      "frames": [
+        5250,
+        5280
+      ],
+      "detections": 31,
+      "avg_similarity": 0.6909
+    },
+    {
+      "track_id": 154,
+      "label": "unknown",
+      "frames": [
+        5281,
+        5286
+      ],
+      "detections": 6,
+      "avg_similarity": 0.2498
+    },
+    {
+      "track_id": 155,
+      "label": "Joey",
+      "frames": [
+        5287,
+        5378
+      ],
+      "detections": 92,
+      "avg_similarity": 0.8176
+    },
+    {
+      "track_id": 156,
+      "label": "Rachel",
+      "frames": [
+        5379,
+        5430
+      ],
+      "detections": 52,
+      "avg_similarity": 0.4709
+    },
+    {
+      "track_id": 157,
+      "label": "unknown",
+      "frames": [
+        5379,
+        5399
+      ],
+      "detections": 21,
+      "avg_similarity": 0.456
+    },
+    {
+      "track_id": 158,
+      "label": "unknown",
+      "frames": [
+        5418,
+        5437
+      ],
+      "detections": 20,
+      "avg_similarity": 0.2843
+    },
+    {
+      "track_id": 159,
+      "label": "unknown",
+      "frames": [
+        5438,
+        5438
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1542
+    },
+    {
+      "track_id": 160,
+      "label": "unknown",
+      "frames": [
+        5442,
+        5447
+      ],
+      "detections": 6,
+      "avg_similarity": 0.1606
+    },
+    {
+      "track_id": 161,
+      "label": "Rachel",
+      "frames": [
+        5473,
+        5518
+      ],
+      "detections": 46,
+      "avg_similarity": 0.5927
+    },
+    {
+      "track_id": 162,
+      "label": "Joey",
+      "frames": [
+        5519,
+        5580
+      ],
+      "detections": 62,
+      "avg_similarity": 0.7853
+    },
+    {
+      "track_id": 163,
+      "label": "Rachel",
+      "frames": [
+        5581,
+        5602
+      ],
+      "detections": 22,
+      "avg_similarity": 0.6962
+    },
+    {
+      "track_id": 164,
+      "label": "Joey",
+      "frames": [
+        5603,
+        5632
+      ],
+      "detections": 30,
+      "avg_similarity": 0.7492
+    },
+    {
+      "track_id": 165,
+      "label": "Rachel",
+      "frames": [
+        5633,
+        5739
+      ],
+      "detections": 107,
+      "avg_similarity": 0.7509
+    },
+    {
+      "track_id": 166,
+      "label": "unknown",
+      "frames": [
+        5740,
+        5740
+      ],
+      "detections": 1,
+      "avg_similarity": 0.055
+    },
+    {
+      "track_id": 167,
+      "label": "Joey",
+      "frames": [
+        5740,
+        5946
+      ],
+      "detections": 205,
+      "avg_similarity": 0.6147
+    },
+    {
+      "track_id": 168,
+      "label": "unknown",
+      "frames": [
+        5765,
+        5766
+      ],
+      "detections": 2,
+      "avg_similarity": 0.144
+    },
+    {
+      "track_id": 169,
+      "label": "unknown",
+      "frames": [
+        5856,
+        5856
+      ],
+      "detections": 1,
+      "avg_similarity": 0.119
+    },
+    {
+      "track_id": 170,
+      "label": "unknown",
+      "frames": [
+        5868,
+        5869
+      ],
+      "detections": 2,
+      "avg_similarity": 0.0495
+    },
+    {
+      "track_id": 171,
+      "label": "unknown",
+      "frames": [
+        5881,
+        5884
+      ],
+      "detections": 4,
+      "avg_similarity": 0.0906
+    },
+    {
+      "track_id": 172,
+      "label": "unknown",
+      "frames": [
+        5944,
+        5945
+      ],
+      "detections": 2,
+      "avg_similarity": 0.0609
+    },
+    {
+      "track_id": 173,
+      "label": "Rachel",
+      "frames": [
+        5947,
+        5958
+      ],
+      "detections": 12,
+      "avg_similarity": 0.5872
+    },
+    {
+      "track_id": 174,
+      "label": "Phoebe",
+      "frames": [
+        5959,
+        6062
+      ],
+      "detections": 100,
+      "avg_similarity": 0.624
+    },
+    {
+      "track_id": 175,
+      "label": "unknown",
+      "frames": [
+        5964,
+        5967
+      ],
+      "detections": 4,
+      "avg_similarity": 0.4174
+    },
+    {
+      "track_id": 176,
+      "label": "unknown",
+      "frames": [
+        5984,
+        5987
+      ],
+      "detections": 3,
+      "avg_similarity": 0.0971
+    },
+    {
+      "track_id": 177,
+      "label": "unknown",
+      "frames": [
+        5997,
+        6003
+      ],
+      "detections": 3,
+      "avg_similarity": 0.0785
+    },
+    {
+      "track_id": 178,
+      "label": "unknown",
+      "frames": [
+        6013,
+        6013
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0956
+    },
+    {
+      "track_id": 179,
+      "label": "unknown",
+      "frames": [
+        6020,
+        6020
+      ],
+      "detections": 1,
+      "avg_similarity": 0.0697
+    },
+    {
+      "track_id": 180,
+      "label": "unknown",
+      "frames": [
+        6034,
+        6036
+      ],
+      "detections": 2,
+      "avg_similarity": 0.091
+    },
+    {
+      "track_id": 181,
+      "label": "Phoebe",
+      "frames": [
+        6063,
+        6099
+      ],
+      "detections": 37,
+      "avg_similarity": 0.7444
+    },
+    {
+      "track_id": 182,
+      "label": "unknown",
+      "frames": [
+        6100,
+        6111
+      ],
+      "detections": 12,
+      "avg_similarity": 0.2834
+    },
+    {
+      "track_id": 183,
+      "label": "unknown",
+      "frames": [
+        6122,
+        6130
+      ],
+      "detections": 9,
+      "avg_similarity": 0.3293
+    },
+    {
+      "track_id": 184,
+      "label": "Joey",
+      "frames": [
+        6131,
+        6170
+      ],
+      "detections": 40,
+      "avg_similarity": 0.8087
+    },
+    {
+      "track_id": 185,
+      "label": "Rachel",
+      "frames": [
+        6171,
+        6186
+      ],
+      "detections": 16,
+      "avg_similarity": 0.826
+    },
+    {
+      "track_id": 186,
+      "label": "Joey",
+      "frames": [
+        6187,
+        6282
+      ],
+      "detections": 95,
+      "avg_similarity": 0.7538
+    },
+    {
+      "track_id": 187,
+      "label": "unknown",
+      "frames": [
+        6268,
+        6268
+      ],
+      "detections": 1,
+      "avg_similarity": 0.3193
+    },
+    {
+      "track_id": 188,
+      "label": "unknown",
+      "frames": [
+        6274,
+        6292
+      ],
+      "detections": 13,
+      "avg_similarity": 0.0993
+    },
+    {
+      "track_id": 189,
+      "label": "Rachel",
+      "frames": [
+        6283,
+        6306
+      ],
+      "detections": 24,
+      "avg_similarity": 0.7774
+    },
+    {
+      "track_id": 190,
+      "label": "unknown",
+      "frames": [
+        6284,
+        6284
+      ],
+      "detections": 1,
+      "avg_similarity": 0.3281
+    },
+    {
+      "track_id": 191,
+      "label": "Rachel",
+      "frames": [
+        6307,
+        6321
+      ],
+      "detections": 15,
+      "avg_similarity": 0.4879
+    },
+    {
+      "track_id": 192,
+      "label": "unknown",
+      "frames": [
+        6315,
+        6316
+      ],
+      "detections": 2,
+      "avg_similarity": 0.1924
+    },
+    {
+      "track_id": 193,
+      "label": "unknown",
+      "frames": [
+        6348,
+        6348
+      ],
+      "detections": 1,
+      "avg_similarity": 0.1191
+    }
+  ]
+}

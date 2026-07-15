@@ -1,0 +1,98 @@
+.sidebar {
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--topbar-height);
+  padding: 0 var(--space-4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.brandIcon {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.25;
+  color: #f8fafc;
+}
+
+.navList {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.navLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.navLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.active {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.active:hover {
+  background: var(--color-primary-hover);
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 64px;
+  }
+
+  .brandName,
+  .navLink span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .navLink {
+    justify-content: center;
+    padding: var(--space-3);
+  }
+}
