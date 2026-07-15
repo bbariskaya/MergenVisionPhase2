@@ -1,2 +1,0 @@
-/usr/bin/ar qc libmergenvision_kernels.a CMakeFiles/mergenvision_kernels.dir/kernels/retinaface_decode.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/argsort.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/nms.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/scale_clip_compact_xy.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/l2_normalize.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/similarity_transform.cu.o CMakeFiles/mergenvision_kernels.dir/kernels/warp_align.cu.o
-/usr/bin/ranlib libmergenvision_kernels.a

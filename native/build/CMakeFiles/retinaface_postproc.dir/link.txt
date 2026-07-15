@@ -1,2 +1,0 @@
-/usr/bin/ar qc libretinaface_postproc.a CMakeFiles/retinaface_postproc.dir/worker/retinaface_postproc.cpp.o
-/usr/bin/ranlib libretinaface_postproc.a

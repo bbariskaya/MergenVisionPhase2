@@ -1,2 +1,0 @@
-gpu_visible=1 gpu_id=0 uuid=22f04c0cb6c29b756f9d7e08fa7d7537 name=Quadro RTX 8000 driver=13.1 cuda=13.1
-Starting pipeline on GPU 0 for /app/test_videos/friendsshort_50f.mp4

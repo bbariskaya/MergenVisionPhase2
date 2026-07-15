@@ -1,0 +1,11 @@
+GPU 0: Quadro RTX 8000 (UUID: GPU-22f04c0c-b6c2-9b75-6f9d-7e08fa7d7537)
+nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on Tue_Dec_16_07:23:41_PM_PST_2025
+Cuda compilation tools, release 13.1, V13.1.115
+Build cuda_13.1.r13.1/compiler.37061995_0
+ii  libnvinfer-dispatch-dev              10.14.1.48-1+cuda13.0                   amd64        TensorRT development dispatch runtime libraries
+gst-inspect-1.0 version 1.24.2
+GStreamer 1.24.2
+https://launchpad.net/ubuntu/+source/gstreamer1.0
+6563c70086bc08fe7d30b60b36d99a410a2bff36cdbc40da539a43a32cbf0e17  engines/retinaface_r50_dynamic.bs1.opt64.max256.fp16.trt1014.engine

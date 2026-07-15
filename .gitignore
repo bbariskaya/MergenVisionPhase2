@@ -1,11 +1,20 @@
-test_videos/
-models/
-engines/
+# Generated build/runtime directories
 tmp/
+.cache/
+backend/out/
+backend/native/build/
+backend/artifacts/*
+!backend/artifacts/.gitkeep
+
+# Local tooling state
+.claude/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Large runtime artifact files (kept under backend/artifacts, not version-controlled)
 *.part
 *.engine
 *.onnx
 *.pt
 *.pth
-.cache/
-out/
