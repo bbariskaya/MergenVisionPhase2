@@ -31,16 +31,21 @@
 #include "retinaface_engine.h"
 #include "retinaface_postproc.h"
 
-namespace mv = mergenvision;
-
-#define GST_TYPE_NVDS_RETINAFACE (gst_nvdsretinaface_get_type())
-#define GST_NVDS_RETINAFACE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFace))
-#define GST_NVDS_RETINAFACE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFaceClass))
+#define MERGEN_COMPONENT_ID 1
+#define FACE_LANDMARK_META_NAME "mv-face-landmark"
 
 struct FaceLandmarkMeta {
     float landmarks[10];
     float score;
 };
+
+static NvDsMetaType g_face_landmark_meta_type = NVDS_USER_META;
+
+namespace mv = mergenvision;
+
+#define GST_TYPE_NVDS_RETINAFACE (gst_nvdsretinaface_get_type())
+#define GST_NVDS_RETINAFACE(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFace))
+#define GST_NVDS_RETINAFACE_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_NVDS_RETINAFACE, GstNvDsRetinaFaceClass))
 
 struct GstNvDsRetinaFace {
     GstBaseTransform base_transform;
@@ -73,6 +78,34 @@ G_DEFINE_TYPE(GstNvDsRetinaFace, gst_nvdsretinaface, GST_TYPE_BASE_TRANSFORM)
 GST_ELEMENT_REGISTER_DEFINE(nvdsretinaface, "nvdsretinaface",
     GST_RANK_PRIMARY, GST_TYPE_NVDS_RETINAFACE)
 
+static gpointer copy_landmark_user_meta(gpointer data, gpointer /*user_data*/) {
+    if (!data) return nullptr;
+    NvDsUserMeta* src = static_cast<NvDsUserMeta*>(data);
+    if (!src->user_meta_data) return nullptr;
+    FaceLandmarkMeta* src_lm = static_cast<FaceLandmarkMeta*>(src->user_meta_data);
+    return new FaceLandmarkMeta(*src_lm);
+}
+
+static void release_landmark_user_meta(gpointer data, gpointer /*user_data*/) {
+    if (!data) return;
+    NvDsUserMeta* user_meta = static_cast<NvDsUserMeta*>(data);
+    if (user_meta->user_meta_data) {
+        delete static_cast<FaceLandmarkMeta*>(user_meta->user_meta_data);
+        user_meta->user_meta_data = nullptr;
+    }
+}
+
+static void ensure_face_landmark_meta_type() {
+    static gboolean initialized = FALSE;
+    if (!initialized) {
+        g_face_landmark_meta_type = nvds_get_user_meta_type((gchar*)FACE_LANDMARK_META_NAME);
+        if (g_face_landmark_meta_type == 0) {
+            g_face_landmark_meta_type = NVDS_USER_META;
+        }
+        initialized = TRUE;
+    }
+}
+
 enum {
     PROP_0,
     PROP_ENGINE_FILE,
@@ -80,15 +113,6 @@ enum {
     PROP_NMS_THRESHOLD,
     PROP_GPU_ID,
 };
-
-static void release_obj_landmark_meta(gpointer data, gpointer /*user_data*/) {
-    if (!data) return;
-    NvDsObjectMeta* obj_meta = static_cast<NvDsObjectMeta*>(data);
-    if (obj_meta->misc_obj_info[0]) {
-        delete reinterpret_cast<FaceLandmarkMeta*>(obj_meta->misc_obj_info[0]);
-        obj_meta->misc_obj_info[0] = 0;
-    }
-}
 
 static void gst_nvdsretinaface_set_property(GObject* object, guint prop_id,
                                             const GValue* value, GParamSpec* pspec) {
@@ -151,6 +175,7 @@ static void gst_nvdsretinaface_finalize(GObject* object) {
 
 static gboolean gst_nvdsretinaface_start(GstBaseTransform* btrans) {
     GstNvDsRetinaFace* self = GST_NVDS_RETINAFACE(btrans);
+    ensure_face_landmark_meta_type();
 
     if (!self->engine_file || !self->engine_file[0]) {
         GST_ELEMENT_ERROR(self, RESOURCE, NOT_FOUND,
@@ -285,18 +310,54 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
         return GST_FLOW_ERROR;
     }
 
-    // For batch-size 1 there is one frame meta.
-    NvDsFrameMeta* frame_meta = nullptr;
-    if (batch_meta->frame_meta_list) {
-        frame_meta = (NvDsFrameMeta*)batch_meta->frame_meta_list->data;
+    // Determine actual batch size from frame metadata and map each frame by batch_id.
+    std::vector<NvDsFrameMeta*> frames_by_batch;
+    int actual_batch = 0;
+    nvds_acquire_meta_lock(batch_meta);
+    for (NvDsMetaList* l = batch_meta->frame_meta_list; l != NULL; l = l->next) {
+        NvDsFrameMeta* fm = (NvDsFrameMeta*)l->data;
+        if (fm->batch_id < 0) {
+            nvds_release_meta_lock(batch_meta);
+            GST_ELEMENT_ERROR(self, STREAM, FAILED,
+                ("invalid batch_id on frame meta"), (NULL));
+            return GST_FLOW_ERROR;
+        }
+        if (fm->batch_id >= actual_batch) actual_batch = fm->batch_id + 1;
+        if (static_cast<size_t>(fm->batch_id) >= frames_by_batch.size()) {
+            frames_by_batch.resize(fm->batch_id + 1, nullptr);
+        }
+        if (frames_by_batch[fm->batch_id] != nullptr) {
+            nvds_release_meta_lock(batch_meta);
+            GST_ELEMENT_ERROR(self, STREAM, FAILED,
+                ("duplicate batch_id in batch"), (NULL));
+            return GST_FLOW_ERROR;
+        }
+        frames_by_batch[fm->batch_id] = fm;
     }
-    if (!frame_meta) {
+    nvds_release_meta_lock(batch_meta);
+
+    if (actual_batch <= 0 || frames_by_batch.size() != static_cast<size_t>(actual_batch)) {
         GST_ELEMENT_ERROR(self, STREAM, FAILED,
-            ("no frame meta"), (NULL));
+            ("missing batch_id slot in frame meta list"), (NULL));
         return GST_FLOW_ERROR;
     }
 
-    // Optional diagnostic: dump the preprocessed input tensor to host.
+    if (actual_batch > self->engine->maxBatchSize()) {
+        GST_ELEMENT_ERROR(self, STREAM, FAILED,
+            ("actual batch size exceeds engine maximum"), ("actual=%d max=%d",
+             actual_batch, self->engine->maxBatchSize()));
+        return GST_FLOW_ERROR;
+    }
+
+    if (!tensor_meta->tensor_shape.empty() &&
+        tensor_meta->tensor_shape[0] != actual_batch) {
+        GST_ELEMENT_ERROR(self, STREAM, FAILED,
+            ("preprocess tensor batch dimension does not match frame meta count"),
+            ("tensor_shape[0]=%d actual_batch=%d", tensor_meta->tensor_shape[0], actual_batch));
+        return GST_FLOW_ERROR;
+    }
+
+    // Optional diagnostic: dump the preprocessed input tensor for the first frame only.
     if (self->dump_preproc && self->h_preproc_dump) {
         cudaError_t dump_err = cudaMemcpyAsync(
             self->h_preproc_dump,
@@ -304,9 +365,9 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
             self->PREPROC_ELM * sizeof(float),
             cudaMemcpyDeviceToHost,
             self->cuda_stream);
-        if (dump_err == cudaSuccess) {
+        if (dump_err == cudaSuccess && !frames_by_batch.empty() && frames_by_batch[0]) {
             cudaStreamSynchronize(self->cuda_stream);
-            int dump_frame = frame_meta ? static_cast<int>(frame_meta->frame_num) : -1;
+            int dump_frame = static_cast<int>(frames_by_batch[0]->frame_num);
             std::string path = self->preproc_dump_dir + "/preproc_" +
                 std::to_string(dump_frame) + ".bin";
             FILE* fp = std::fopen(path.c_str(), "wb");
@@ -314,7 +375,7 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
                 std::fwrite(self->h_preproc_dump, sizeof(float), self->PREPROC_ELM, fp);
                 std::fclose(fp);
             }
-            write_preproc_sidecar(btrans, frame_meta, tensor_meta,
+            write_preproc_sidecar(btrans, frames_by_batch[0], tensor_meta,
                                   self->preproc_dump_dir, dump_frame);
         }
     }
@@ -323,42 +384,54 @@ static GstFlowReturn gst_nvdsretinaface_transform_ip(GstBaseTransform* btrans,
     const float* d_conf = nullptr;
     const float* d_landms = nullptr;
     int num_anchors = 0;
-    if (!self->engine->infer(tensor_meta->raw_tensor_buffer, 1,
+    if (!self->engine->infer(tensor_meta->raw_tensor_buffer, actual_batch,
                              &d_loc, &d_conf, &d_landms, &num_anchors)) {
         GST_ELEMENT_ERROR(self, STREAM, FAILED,
             ("RetinaFace inference failed"), (NULL));
         return GST_FLOW_ERROR;
     }
 
-    auto detections = self->postproc->processFrame(
-        d_loc, d_conf, d_landms, num_anchors,
-        frame_meta->source_frame_width, frame_meta->source_frame_height,
-        self->conf_threshold, self->nms_threshold);
+    std::vector<std::pair<int, int>> original_dims;
+    original_dims.reserve(actual_batch);
+    for (int b = 0; b < actual_batch; ++b) {
+        original_dims.emplace_back(
+            frames_by_batch[b]->source_frame_width,
+            frames_by_batch[b]->source_frame_height);
+    }
+
+    auto per_frame_detections = self->postproc->processBatch(
+        d_loc, d_conf, d_landms, num_anchors, actual_batch,
+        original_dims, self->conf_threshold, self->nms_threshold);
 
     nvds_acquire_meta_lock(batch_meta);
-    for (const auto& det : detections) {
-        NvDsObjectMeta* obj_meta = nvds_acquire_obj_meta_from_pool(batch_meta);
-        // Do not memset the whole struct: the pool initializes internal links
-        // and base_meta. Set only application-visible fields.
-        obj_meta->unique_component_id = 0;  // match tracker's default primary detector
-        obj_meta->object_id = UNTRACKED_OBJECT_ID;  // tracker will assign its own ID
-        obj_meta->class_id = 0;
-        obj_meta->confidence = det.score;
-        obj_meta->rect_params.left = det.x1;
-        obj_meta->rect_params.top = det.y1;
-        obj_meta->rect_params.width = det.x2 - det.x1;
-        obj_meta->rect_params.height = det.y2 - det.y1;
-        obj_meta->text_params.display_text = nullptr;
+    for (int b = 0; b < actual_batch; ++b) {
+        NvDsFrameMeta* fm = frames_by_batch[b];
+        for (const auto& det : per_frame_detections[b]) {
+            NvDsObjectMeta* obj_meta = nvds_acquire_obj_meta_from_pool(batch_meta);
+            obj_meta->unique_component_id = MERGEN_COMPONENT_ID;
+            obj_meta->object_id = UNTRACKED_OBJECT_ID;
+            obj_meta->class_id = 0;
+            obj_meta->confidence = det.score;
+            obj_meta->rect_params.left = det.x1;
+            obj_meta->rect_params.top = det.y1;
+            obj_meta->rect_params.width = det.x2 - det.x1;
+            obj_meta->rect_params.height = det.y2 - det.y1;
+            obj_meta->text_params.display_text = nullptr;
 
-        FaceLandmarkMeta* lm = new FaceLandmarkMeta();
-        std::memcpy(lm->landmarks, det.landmarks, sizeof(lm->landmarks));
-        lm->score = det.score;
+            NvDsUserMeta* user_meta = nvds_acquire_user_meta_from_pool(batch_meta);
+            if (user_meta) {
+                FaceLandmarkMeta* lm = new FaceLandmarkMeta();
+                std::memcpy(lm->landmarks, det.landmarks, sizeof(lm->landmarks));
+                lm->score = det.score;
+                user_meta->user_meta_data = lm;
+                user_meta->base_meta.meta_type = g_face_landmark_meta_type;
+                user_meta->base_meta.copy_func = copy_landmark_user_meta;
+                user_meta->base_meta.release_func = release_landmark_user_meta;
+                nvds_add_user_meta_to_obj(obj_meta, user_meta);
+            }
 
-        obj_meta->misc_obj_info[0] = reinterpret_cast<gint64>(lm);
-        obj_meta->base_meta.release_func = release_obj_landmark_meta;
-        obj_meta->base_meta.copy_func = NULL;
-
-        nvds_add_obj_meta_to_frame(frame_meta, obj_meta, NULL);
+            nvds_add_obj_meta_to_frame(fm, obj_meta, NULL);
+        }
     }
     nvds_release_meta_lock(batch_meta);
 

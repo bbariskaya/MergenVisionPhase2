@@ -28,12 +28,25 @@ public:
         float conf_threshold,
         float nms_threshold);
 
+    // Batch-aware postprocess. Returns detections per frame in batch order.
+    std::vector<std::vector<FaceDetection>> processBatch(
+        const float* d_loc,
+        const float* d_conf,
+        const float* d_landms,
+        int num_anchors,
+        int batch,
+        const std::vector<std::pair<int, int>>& original_dims,
+        float conf_threshold,
+        float nms_threshold);
+
     void setDebug(bool v) { debug_ = v; }
     int deviceId() const { return device_id_; }
     cudaStream_t stream() const { return stream_; }
+    int maxBatchAlloc() const { return max_batch_alloc_; }
 
 private:
     void generatePriors();
+    void ensureBuffers(int batch);
 
     int input_size_;
     int max_candidates_;
@@ -60,6 +73,8 @@ private:
     float* h_out_landmarks_ = nullptr;
     float* h_out_scores_ = nullptr;
     int* h_out_count_ = nullptr;
+
+    int max_batch_alloc_ = 1;
 
     int num_priors_ = 0;
 };

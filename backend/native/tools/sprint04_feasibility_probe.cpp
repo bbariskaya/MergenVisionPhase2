@@ -287,21 +287,24 @@ int main(int argc, char* argv[]) {
     GstElement* decoder = gst_element_factory_make("nvv4l2decoder", "nvdec");
     GstElement* streammux = gst_element_factory_make("nvstreammux", "stream-muxer");
     GstElement* preprocess = gst_element_factory_make("nvdspreprocess", "preprocess");
+    GstElement* demux = gst_element_factory_make("nvstreamdemux", "demuxer");
+    GstElement* queue = gst_element_factory_make("queue", "post-preprocess-queue");
     GstElement* sink = gst_element_factory_make("fakesink", "fake-sink");
 
-    if (!pipeline || !source || !qtdemux || !h264parse || !decoder || !streammux || !preprocess || !sink) {
+    if (!pipeline || !source || !qtdemux || !h264parse || !decoder || !streammux || !preprocess || !demux || !queue || !sink) {
         g_printerr("Failed to create one or more elements\n");
         return -1;
     }
 
     g_object_set(G_OBJECT(source), "location", ctx.input_path.c_str(), NULL);
-    g_object_set(G_OBJECT(sink), "sync", 0, "async", 0, NULL);
+    g_object_set(G_OBJECT(sink), "sync", 0, "async", 0, "qos", 0, NULL);
 
     g_object_set(G_OBJECT(streammux),
         "batch-size", ctx.batch_size,
         "width", 1280,
         "height", 720,
-        "batched-push-timeout", 40000,
+        "batched-push-timeout", 1000000,
+        "buffer-pool-size", 16,
         "live-source", FALSE,
         NULL);
 
@@ -310,7 +313,7 @@ int main(int argc, char* argv[]) {
         "gpu-id", ctx.gpu_id,
         NULL);
 
-    gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux, preprocess, sink, NULL);
+    gst_bin_add_many(GST_BIN(pipeline), source, qtdemux, h264parse, decoder, streammux, preprocess, demux, queue, sink, NULL);
 
     if (!gst_element_link_many(source, qtdemux, NULL)) {
         g_printerr("Failed to link filesrc->qtdemux\n");
@@ -332,8 +335,22 @@ int main(int argc, char* argv[]) {
     gst_object_unref(dec_src);
     gst_object_unref(mux_sink);
 
-    if (!gst_element_link_many(streammux, preprocess, sink, NULL)) {
-        g_printerr("Failed to link streammux->preprocess->sink\n");
+    if (!gst_element_link_many(streammux, preprocess, demux, NULL)) {
+        g_printerr("Failed to link streammux->preprocess->demux\n");
+        return -1;
+    }
+
+    GstPad* demux_src = gst_element_request_pad_simple(demux, "src_0");
+    GstPad* queue_sink = gst_element_get_static_pad(queue, "sink");
+    if (!demux_src || !queue_sink || gst_pad_link(demux_src, queue_sink) != GST_PAD_LINK_OK) {
+        g_printerr("Failed to link demux->queue\n");
+        return -1;
+    }
+    gst_object_unref(demux_src);
+    gst_object_unref(queue_sink);
+
+    if (!gst_element_link_many(queue, sink, NULL)) {
+        g_printerr("Failed to link queue->sink\n");
         return -1;
     }
 
